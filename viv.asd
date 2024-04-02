@@ -39,8 +39,7 @@
     :pathname "analysis"
     :depends-on (foundation terms)
     :components
-    ((:file "comptime")
-     (:file "function")))
+    ((:file "comptime")))
 
    (:module
     transform
@@ -71,4 +70,5 @@
     :pathname "foundation"
     :depends-on ("package")
     :components
-    ((:file "agent")))))
+    ((:file "agent")
+     (:file "function")))))

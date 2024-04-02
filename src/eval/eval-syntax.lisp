@@ -108,7 +108,7 @@
 (defun try-match (clause args)
   (assert (= (length args) (length (car clause))))
   (let* ((pattern (car clause))
-         (binds mapcar #'match-pattern pattern args))
+         (binds (mapcar #'match-pattern pattern args)))
     (when (every (lambda (x) (not (eq x :false))) binds)
       (cons binds (cdr clause)))))
 
@@ -120,20 +120,20 @@
    (error "match failed!")))
                           
 
-(defmethod eval-term (env (term sy-recursor))
-  (mdo
-   (bind vals (mapM (lambda (val) (eval-term env val)) (vals term)))
-   (labels ((recur (&rest args)
-              (let* ((match-res (get-match args (clauses term)))
-                     (new-env (env:insert-many
-                               (append (car match-res)
-                                       (list (cons (name term)
-                                                   (make-instance 'primop
-                                                                  :arity (length args)
-                                                                  :fun #'recur))))
-                               env)))
-                (eval-term new-env (cdr match-res)))))
-     (apply #'recur vals))))
+;; (defmethod eval-term (env (term sy-recursor))
+;;   (mdo
+;;    (bind vals (mapM (lambda (val) (eval-term env val)) (vals term)))
+;;    (labels ((recur (&rest args)
+;;               (let* ((match-res (get-match args (clauses term)))
+;;                      (new-env (env:insert-many
+;;                                (append (car match-res)
+;;                                        (list (cons (name term)
+;;                                                    (make-instance 'primop
+;;                                                                   :arity (length args)
+;;                                                                   :fun #'recur))))
+;;                                env)))
+;;                 (eval-term new-env (cdr match-res)))))
+;;      (apply #'recur vals))))
 
 ;; eval-term
 ;; env:insert-many (append binds (cons name (make-instance 'primop)))
