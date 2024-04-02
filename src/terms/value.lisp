@@ -1,4 +1,4 @@
-
+(in-package :viv)
 
 (defclass viv-value () ()
   (:documentation ""))
@@ -16,6 +16,7 @@
 (defclass viv-symbol (viv-value)
   ((m-symbol
     :accessor m-symbol)))
+
 (defclass primop (viv-value)
   ((arity
     :accessor arity
@@ -29,6 +30,7 @@
 
 ;; Data Values 
 (defclass viv-coval (viv-value) ())
+
 (defclass viv-ival (viv-value)
   ((name
     :accessor name
@@ -36,10 +38,12 @@
    (vals
     :accessor vals
     :initarg :vals)))
+
 (defclass viv-struct (viv-value)
   ((fields
     :accessor fields
     :initarg :fields
+    :initform (make-hash-table)
     :documentation "The set of name,value pairs in the struct")))
 
 ;; Stack values
@@ -57,23 +61,30 @@
     :accessor fun
     :initarg :fun)))
 
+(defclass viv-package (viv-value)
+  ((modules
+    :accessor modules
+    :initform (make-hash-table)
+    :initarg :modules)
+   (exports
+    :accessor exports
+    :initform nil 
+    :initarg :exports)
+   (prelude
+    :accessor prelude
+    :initform nil
+    :initarg :prelude)
+   (dependencies
+    :accessor dependencies
+    :initform nil
+    :initarg :dependencies)
+   (name
+    :accessor name
+    :initarg :name)))
 
-
-
-;; Stack
-(defclass viv-stack (viv-value)
-  ((stack
-    :accessor stack
-    :initarg :stack
-    :initform (make-array 100 :fill-pointer 0))))
-
-(defun stack-push (val stack) (vector-push val (stack stack)))
-(defun stack-pop (stack) (vector-pop (stack stack)))
-
-(defmethod print-object ((stack viv-stack) stream)
-  (write-string "Stack:" stream)
-  (loop for elem across (stack stack)
-        do (progn
-             (write-char #\newline stream)
-             (write-string "- " stream)
-             (print-object elem stream))))
+(defclass viv-module (viv-struct)
+  ((name
+    :accessor name
+    :initarg :name))
+  (:documentation "A Module is much like a struct, but is able to influence how
+  its' members are run (typechecked, not typechecked etc.)"))

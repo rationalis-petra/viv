@@ -12,30 +12,63 @@
   ;; :build-pathname "wbc.exe"
   ;; :entry-point #'cl-user::main ;main
   ;;:depends-on (:iup)
+  :depends-on (:bordeaux-threads :trivia)
   :pathname "src"
   :components
-  ((:file "main" :depends-on (transform terms "eval"))
-   (:file "parse" :depends-on (terms))
+  ((:file "package")
+
+   (:module
+    app
+    :pathname "app"
+    :depends-on (foundation eval)
+    :components
+    ((:file "app" :depends-on ("world"))
+     (:file "main" :depends-on ("world"))
+     (:file "world")))
+
    (:module
     eval
     :pathname "eval"
-    :depends-on (terms binding)
+    :depends-on (foundation terms binding)
     :components ((:file "eval-canonical" :depends-on ("monad"))
                  (:file "eval-syntax")
                  (:file "monad")))
+
    (:module
-    binding
-    :pathname "binding"
-    :components ((:file "environment")))
+    analysis
+    :pathname "analysis"
+    :depends-on (foundation terms)
+    :components
+    ((:file "comptime")
+     (:file "function")))
+
    (:module
     transform
     :pathname "transform"
-    :components ((:file "to-abstract")))
+    :depends-on (foundation binding)
+    :components
+    ((:file "to-abstract")
+     (:file "parse")))
+
+   (:module
+    binding
+    :pathname "binding"
+    :depends-on (foundation terms)
+    :components ((:file "environment")))
+
    (:module
     terms
     :pathname "terms"
+    :depends-on (foundation)
     :components
     ((:file "builtins" :depends-on ("value"))
      (:file "value")
      (:file "abstract")
-     (:file "concrete")))))
+     (:file "concrete")))
+
+   (:module
+    foundation
+    :pathname "foundation"
+    :depends-on ("package")
+    :components
+    ((:file "agent")))))

@@ -1,3 +1,4 @@
+(in-package :viv)
 
 (defvar *builtin-plus*
   (make-instance 'primop

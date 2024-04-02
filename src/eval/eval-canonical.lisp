@@ -1,10 +1,4 @@
-(define-condition variable-not-found (error)
-  ((missing-var
-    :initarg :missing-var
-    :accessor missing-var)
-   (env
-    :initarg :env
-    :accessor env)))
+(in-package :viv)
 
 ;; The 'Canonical' evaluation of terms: 
 ;; • Can be thought of as an operational specification of how concrete syntax
@@ -16,7 +10,9 @@
   (cond
     ((typep term 'concrete-node)
      (case (node-type term)
-       (:stack (eval-stack (reverse (contents term)) (make-instance 'viv-stack) env))
+       (:stack (mdo
+                (bind res (eval-stack (reverse (contents term)) nil env))
+                (pure (cons :stack res))))
        (:expr  (eval-expr-node (contents term) env))
        (:query (error "query not implemented"))))
     ((typep term 'concrete-atom)
@@ -34,44 +30,32 @@
 (defun eval-stack (list stack env)
   "Evaluate a list of terms as a stack program"
   ;; iterate through stack, evaluate each element in turn, 
-  (loop for term in list do
-    (cond
-      ((typep term 'concrete-node)
-       (case (node-type term)
-         (:stack (stack-push term stack)) ;; TODO: make stack-fn??
-         (:expr (stack-process-val (eval-expr term env) stack))
-         (:query (error "query not implemented"))))
-      ((typep term 'concrete-atom)
-       (eval-stack-atom term stack env))
-      (t (error (format nil "Unrecogniszed stack program: ~A~%" term)))))
-  stack)
+  (labels ((sgo (instrs stack)
+             (if instrs
+                 (mdo
+                  (bind new-stack (eval-stack-term (car instrs) stack env))
+                  (sgo (cdr instrs) new-stack))
+                 (pure stack))))
+    (sgo list stack)))
 
-(defun eval-stack-any (term stack env)
-  "Evaluate an arbitrary langauge term which is embedded in a stack program"
+(defun eval-stack-term (term stack env)
   (cond
     ((typep term 'concrete-node)
-     (ecase (node-type term)
-       (:stack (stack-push term stack)) ;; TODO make stack-fn!
-       (:expr  (stack-push (eval-expr-node (contents term) env) stack))
+     (case (node-type term)
+       (:stack (pure (cons term stack))) ;; TODO: make stack-fn??
+       (:expr (mdo
+               (bind result (eval-expr term env))
+               (stack-process-val result stack)))
        (:query (error "query not implemented"))))
     ((typep term 'concrete-atom)
-     (eval-stack-atom (contents term) stack env))))
-
-(defun run-stack-function (primop stack)
-  (when (> (arity primop) (length (stack stack)))
-    (error "not enough args to stack function!"))
-  (let ((result
-          (apply (fun primop)
-                 (loop for i from 1 to (arity primop)
-                       collect (stack-pop stack)))))
-    (stack-push result stack)))
+     (eval-stack-atom term stack env))))
 
 (defun eval-stack-atom (atom stack env)
   "Evaluate an atom on the stack. Updates the stack accordingly & returns nil"
   (cond
     ((typep (contents atom) 'keyword)
       (let ((val (env:lookup (contents atom) env)))
-        (unless val (error 'variable-not-found
+        (unless val (error 'env:variable-not-found
                            :missing-var (contents atom)
                            :env env))
         (stack-process-val val stack)))
@@ -82,7 +66,17 @@
     ((or (typep val 'primop) (typep val 'viv-fun))
      (run-stack-function val stack))
     
-    (t (stack-push val stack))))
+    (t (pure (cons val stack)))))
+
+(defun run-stack-function (primop stack)
+  (when (> (arity primop) (length stack))
+    (error "not enough args to stack function!"))
+  (mdo
+   (bind result
+         (apply (fun primop)
+                (subseq stack 0 (arity primop))))
+   (pure (cons result (subseq stack (arity primop))))))
+
 
 
 
@@ -101,7 +95,9 @@
   (cond
     ((typep term 'concrete-node)
      (case (node-type term)
-       (:stack (stack-pop (eval-stack (reverse (contents term)) (make-instance 'viv-stack) env)))
+       (:stack (mdo
+                (bind stack (eval-stack (reverse (contents term)) nil env))
+                (pure (car stack))))
        (:expr  (eval-expr-node (contents term) env))
        (:query (error "query not implemented"))))
     ((typep term 'concrete-atom)
@@ -181,23 +177,3 @@
         'viv-ival
         :name sym
         :vals (mapcar (lambda (term) (eval-any-expr term env)) (cdr args)))))))
-
-(defun get-symbol (term)
-  (assert (typep (contents term) 'keyword))
-  (contents term))
-
-(defun get-symval-pair (terms env)
-  (assert (= (length terms) 2))
-  (unless (typep (contents (car terms)) 'keyword)
-    (error "Term list element must contain symbol as first pair"))
-  (mdo
-    (bind val (eval-any-expr (elt terms 1) env))
-    (pure (cons (contents (elt terms 0)) val))))
-
-(defun get-symlist (expr)
-  (unless (typep expr 'concrete-node)
-    (error "Symbol list require to be list"))
-  (loop for elt in (contents expr)
-        do (unless (typep (contents elt) 'keyword)
-          (error "Symbollist required to contain only symbols"))
-        collect (contents elt)))

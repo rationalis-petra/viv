@@ -1,13 +1,16 @@
+(in-package :viv)
 
 ;; Eval monad
 ;; For now, we get delimited continuations
 
-(defclass monad-pure ()
+(defclass monad () ())
+
+(defclass monad-pure (monad)
   ((val
     :accessor val
     :initarg :val)))
 
-(defclass monad-bind ()
+(defclass monad-bind (monad)
   ((monad
     :accessor monad
     :initarg :monad)
@@ -15,17 +18,18 @@
     :accessor fun
     :initarg :fun)))
 
-(defclass monad-shift ()
+(defclass monad-shift (monad)
   ((fun
     :accessor fun
     :initarg :fun)))
 
-(defclass monad-reset ()
+(defclass monad-reset (monad)
   ((inner
     :accessor inner
     :initarg :inner)))
 
-;; (defun ())
+
+
 
 (defgeneric run (monad))
 
@@ -62,7 +66,9 @@
 (defun mreset (inner) (make-instance 'monad-reset :inner inner))
 (defun mshift (fun) (make-instance 'monad-shift :fun fun))
 (defun bind (monad fun) (make-instance 'monad-bind :monad monad :fun fun))
-(defun seq  (m1 m2) (make-instance 'monad-bind :monad monad :fun fun))
+
+(declaim (ftype (function (monad monad) monad) seq))
+(defun seq  (m1 m2) (make-instance 'monad-bind :monad m1 :fun (lambda (x) m2)))
 (defun pure (val) (make-instance 'monad-pure :val val))
 
 (defmacro mdo (&rest computations)

@@ -1,3 +1,4 @@
+(in-package :viv)
 
 
 ;; Take an input stream; convert to a concrete syntax tree
