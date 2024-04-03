@@ -39,7 +39,8 @@
     :pathname "analysis"
     :depends-on (foundation terms)
     :components
-    ((:file "comptime")))
+    ((:file "comptime")
+     (:file "syntax")))
 
    (:module
     transform

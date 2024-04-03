@@ -50,7 +50,15 @@
 (defclass viv-stackfun (viv-value)
   ((program
     :accessor program
-    :initarg :program)))
+    :initarg :program)
+   (env
+    :accessor env
+    :initarg :env)))
+
+(defclass viv-values (viv-value)
+  ((m-values
+    :accessor m-values
+    :initarg :values)))
 
 ;; Expression Values
 (defclass viv-fun (viv-value)

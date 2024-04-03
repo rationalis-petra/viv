@@ -59,6 +59,11 @@
     (error "Term list element must contain symbol as first pair"))
   (list (contents (elt (contents terms) 0)) (elt (contents terms) 1)))
 
+(defun get-list (expr)
+  (unless (typep expr 'concrete-node)
+    (error "Symbol list require to be list"))
+  (contents expr))
+
 (defun get-symlist (expr)
   (unless (typep expr 'concrete-node)
     (error "Symbol list require to be list"))

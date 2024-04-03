@@ -84,11 +84,11 @@
     :accessor clauses)))
 
 (defclass sy-pattern () ())
-(defclass pattern-any ()
+(defclass pattern-any (sy-pattern)
   ((var
     :initarg :var
     :accessor var)))
-(defclass pattern-ival ()
+(defclass pattern-ival (sy-pattern)
   ((name
     :initarg :name
     :accessor name)
@@ -115,8 +115,9 @@
 
 ;; Stack evaluation
 ;; • Stackprogram = like function, but for stacks
-(defclass sy-stackkprog (viv-syntax)
+(defclass sy-stackprog (viv-syntax)
   ((terms
+    :accessor terms
     :initarg :terms)))
 (defclass sy-former (viv-former)
   ((symbol)))

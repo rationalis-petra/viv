@@ -51,8 +51,8 @@
 (defmethod eval-term (env (term sy-apply))
   (mdo
    (bind callee (eval-term env (fun term)))
-   (cond
-     ((or (typep callee 'primop) (typep callee 'viv-fun))
+   (typecase callee
+     ((or primop viv-fun)
       (unless (= (length (args term)) (arity callee))
         (error 'bad-arity
                :expected-arity (arity callee)
@@ -60,6 +60,10 @@
                :value callee))
       (mdo (bind args (mapM (lambda (e) (eval-term env e)) (args term)))
            (apply (fun callee) args)))
+     (viv-stackfun
+      (mdo (bind args (mapM (lambda (e) (eval-term env e)) (args term)))
+           (bind final-stack (stack-run (env callee) (program callee) args))
+           (pure (to-values final-stack))))
      (t (error  'bad-sort :expected-sort '(:fun :inductive))))))
 
 (defmethod eval-term (env (term sy-reset))
@@ -90,27 +94,28 @@
    (bind vals (mapM (lambda (val) (eval-term env val)) (args term)))
    (pure (make-instance 'viv-ival :name (name term) :vals vals))))
 
-(defun match-pattern (val pattern)
+(declaim (ftype (function (sy-pattern t) t) match-pattern)) 
+(defun match-pattern (pattern val)
   (typecase pattern
-    (pattern-any (list (cons (var pattern) val)))
+    (pattern-any
+     (list (cons (var pattern) val)))
     (pattern-ival
      (if (and (eq (name pattern) (name val))
               (= (length (subpatterns pattern))
                  (length (vals val))))
-         (let ((submatches (mapcar #'match-pattern (vals val) (subpatterns pattern))))
+         (let ((submatches (mapcar #'match-pattern (subpatterns pattern) (vals val))))
            (if (every (lambda (x) (not (eq x :false))) submatches)
                (apply #'append submatches)
-               :false)
-         :false)))
-
-    (t (error "bad pattern"))))
+               :false))
+         :false))
+    (t (error (format nil "bad-pattern: ~A~%" pattern)))))
 
 (defun try-match (clause args)
   (assert (= (length args) (length (car clause))))
   (let* ((pattern (car clause))
          (binds (mapcar #'match-pattern pattern args)))
     (when (every (lambda (x) (not (eq x :false))) binds)
-      (cons binds (cdr clause)))))
+      (cons (reduce #'append  binds) (cdr clause)))))
 
 (defun get-match-term (args clauses)
   (or 
@@ -120,21 +125,53 @@
    (error "match failed!")))
                           
 
-;; (defmethod eval-term (env (term sy-recursor))
-;;   (mdo
-;;    (bind vals (mapM (lambda (val) (eval-term env val)) (vals term)))
-;;    (labels ((recur (&rest args)
-;;               (let* ((match-res (get-match args (clauses term)))
-;;                      (new-env (env:insert-many
-;;                                (append (car match-res)
-;;                                        (list (cons (name term)
-;;                                                    (make-instance 'primop
-;;                                                                   :arity (length args)
-;;                                                                   :fun #'recur))))
-;;                                env)))
-;;                 (eval-term new-env (cdr match-res)))))
-;;      (apply #'recur vals))))
+(defmethod eval-term (env (term sy-recursor))
+  (mdo
+   (bind vals (mapM (lambda (val) (eval-term env val)) (vals term)))
+   (labels ((recur (&rest args)
+              (let* ((match-res (get-match-term args (clauses term)))
+                     (new-env (env:insert-many
+                               (append (car match-res)
+                                       (list (cons (name term)
+                                                   (make-instance 'primop
+                                                                  :arity (length args)
+                                                                  :fun #'recur))))
+                               env)))
+                (eval-term new-env (cdr match-res)))))
+     (apply #'recur vals))))
 
-;; eval-term
-;; env:insert-many (append binds (cons name (make-instance 'primop)))
-;;
+
+
+;; Stack Evaluation
+(defmethod eval-term (env (term sy-stackprog))
+  (pure (make-instance 'viv-stackfun
+                 :program (terms term)
+                 :env env)))
+
+(defun stack-run (env program stack)
+  (if (null program) (pure stack)
+      (typecase (car program)
+        (sy-stackprog
+         (stack-run
+          env
+          (cdr program)
+          (make-instance 'viv-stackfun :env env
+                                       :program (terms (car program)))))
+        (t (mdo (bind res (eval-term env (car program)))
+                (bind new-stack (stack-word env res stack))
+                (stack-run env (cdr program) new-stack))))))
+
+(defun stack-word (env word stack)
+  (declare (ignore env))
+  (typecase word
+    ((or primop viv-fun)
+     (if (< (arity word) (length stack))
+         (error "not enough args on stack")
+         (mdo (bind val (apply (fun word) (subseq stack 0 (arity word))))
+              (pure (cons val (subseq stack (arity word)))))))
+    (t (pure (cons word stack)))))
+
+(defun to-values (stack)
+  (if (= (length stack) 1)
+      (car stack)
+      (make-instance 'viv-values :values stack)))
