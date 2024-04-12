@@ -10,63 +10,37 @@
   ;; Loaded Resources
   (:documentation "The world state of a viv instance"))
 
+
+(defvar *current-world*)
+
+
 (defmethod initialize-instance ((world world) &key packages &allow-other-keys)
   (let* ((packages (or packages (make-hash-table)))
-         (modules (make-hash-table))
-         (core-package (make-instance 'viv-package
-                                      :name "core"
-                                      :exports '(:|lang|)
-                                      :prelude '((:|core| :|lang|))
-                                      :modules modules))
-
-         (lang-entries (make-hash-table))
-         (lang-module (make-instance 'viv-module
-                                     :name "lang"
-                                     :fields lang-entries))
-
+         (base-package (viv-base:make-base))
 
          (user-modules (make-hash-table))
          (user-package (make-instance 'viv-package
                                       :name "viv-user"
-                                      :prelude '((:|core| :|lang|))
-                                      :dependencies '(:|core|)
-                                      :modules user-modules ))
+                                      :prelude '((:|base| :|core| :|lang|)
+                                                 (:|base| :|core| :|reflect|)
+                                                 (:|base| :|core| :|num|)
+
+                                                 (:|base| :|system|))
+                                      :dependencies '(:|base|)
+                                      :modules user-modules))
          (user-module (make-instance 'viv-module
                                      :name "viv-user"
                                      :fields (make-hash-table))))
 
     (setf (packages world) packages)
 
-    (setf (gethash :|core| packages) core-package)
+    (setf (gethash :|base| packages) base-package)
     (setf (gethash :|viv-user| packages) user-package)
 
-    (setf (gethash :|viv-user| user-modules) user-module)
+    (setf (gethash :|viv-user| user-modules) user-module)))
 
-    (setf (gethash :|lang| modules) lang-module)
 
-    (setf (gethash :|if| lang-entries) (mk-former :if))
 
-    (setf (gethash :|def| lang-entries) (mk-former :define))
-
-    (setf (gethash :|fn| lang-entries)(mk-former :function))
-    (setf (gethash :|app| lang-entries) (mk-former :app))
-
-    (setf (gethash :|,| lang-entries) (mk-former :destructor))
-    (setf (gethash :|object| lang-entries) (mk-former :corecursor))
-
-    (setf (gethash :|:| lang-entries) (mk-former :constructor))
-    (setf (gethash :|match| lang-entries) (mk-former :recursor))
-
-    (setf (gethash :|/| lang-entries) (mk-former :projector))
-    (setf (gethash :|struct| lang-entries) (mk-former :structure))
-
-    (setf (gethash :|shift| lang-entries) (mk-former :shift))
-    (setf (gethash :|reset| lang-entries) (mk-former :reset))
-
-    (setf (gethash :|+| lang-entries) *builtin-plus*)
-    (setf (gethash :|-| lang-entries) *builtin-minus*)
-    (setf (gethash :|÷| lang-entries) *builtin-divide*)
-    (setf (gethash :|*| lang-entries) *builtin-multiply*)))
 
 
 ;; Messages

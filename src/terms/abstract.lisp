@@ -29,6 +29,11 @@
     :accessor value)))
 (defun make-lit (val) (make-instance 'sy-literal :value val))
 
+(defclass sy-seq (viv-syntax)
+  ((terms
+    :initarg :terms
+    :accessor terms)))
+
 ;; Expresssions
 (defclass sy-function (viv-syntax)
   ((args
@@ -109,6 +114,11 @@
     :initarg :field
     :accessor field)))
 
+(defclass sy-macro (viv-syntax)
+  ((body
+    :accessor body
+    :initarg :body)))
+
 ;; "Special Forms" (modify evaluation)
 (defclass sy-let (viv-syntax)
   ())
@@ -119,7 +129,7 @@
   ((terms
     :accessor terms
     :initarg :terms)))
-(defclass sy-former (viv-former)
+(defclass sy-former (viv-syntax)
   ((symbol)))
 
 ;; Query evaluation

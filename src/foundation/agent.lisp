@@ -1,4 +1,4 @@
-(in-package :viv)
+(in-package :foundation)
 
 (defclass system ()
   ((agents

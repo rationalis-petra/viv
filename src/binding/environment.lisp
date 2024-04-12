@@ -3,6 +3,7 @@
   (:use :cl :viv)
   (:export
    :dynamic-env :macro-env :canon-env
+   :macro->dynamic
 
    :env-world :env-package :env-module
 
@@ -11,6 +12,7 @@
    :insert :insert-many :insert-inplace
    
    :shadow-var :shadow-vars :shadow-var-inplace
+
 
    :lookup-path
 
@@ -70,6 +72,14 @@
    (env
     :initarg :env
     :accessor env)))
+
+(declaim (ftype (function (macro-env)  dynamic-env) macro->dynamic))
+(defun macro->dynamic (env)
+  (make-instance 'dynamic-env
+                 :world (env-world env)
+                 :package (env-package env)
+                 :module (env-module env)
+                 :locals nil))
 
 
 (declaim (ftype (function ((or list symbol) env) t) lookup))

@@ -1,0 +1,63 @@
+(in-package :viv-base)
+
+
+
+;; References
+(defvar *builtin-ref*
+  (make-instance 'primop
+                 :arity 1
+                 :fun (lambda (x) (pure (make-instance 'viv-ref :element x)))))
+
+(defvar *builtin-get*
+  (make-instance 'primop
+                 :arity 1
+                 :fun (lambda (ref) (pure (element ref)))))
+
+(defvar *builtin-set*
+  (make-instance 'primop
+                 :arity 2
+                 :fun (lambda (ref val) (pure (progn (setf (element ref) val) nil)))))
+
+;; Unique atoms & nominal types
+(defun unique
+    (x) (pure (mk-unique (str x))))
+  
+
+(defun make-lang-module ()
+  (let* ((lang-entries (make-hash-table))
+         (lang-module (make-instance 'viv:viv-module
+                                     :name "lang"
+                                     :fields lang-entries)))
+
+    (setf (gethash :|macro| lang-entries) (mk-former :macro))
+    (setf (gethash :|quote| lang-entries) (mk-former :quote))
+
+    (setf (gethash :|if| lang-entries) (mk-former :if))
+
+    (setf (gethash :|def| lang-entries) (mk-former :define))
+
+    (setf (gethash :|fn| lang-entries)(mk-former :function))
+    (setf (gethash :|app| lang-entries) (mk-former :app))
+
+    (setf (gethash :|,| lang-entries) (mk-former :destructor))
+    (setf (gethash :|object| lang-entries) (mk-former :corecursor))
+
+    (setf (gethash :|:| lang-entries) (mk-former :constructor))
+    (setf (gethash :|match| lang-entries) (mk-former :recursor))
+
+    (setf (gethash :|/| lang-entries) (mk-former :projector))
+    (setf (gethash :|struct| lang-entries) (mk-former :structure))
+
+    (setf (gethash :|shift| lang-entries) (mk-former :shift))
+    (setf (gethash :|reset| lang-entries) (mk-former :reset))
+
+    (setf (gethash :|seq| lang-entries) (mk-former :seq))
+
+    (setf (gethash :|ref!| lang-entries) *builtin-ref*)
+    (setf (gethash :|get!| lang-entries) *builtin-get*)
+    (setf (gethash :|set!| lang-entries) *builtin-set*)
+
+    (setf (gethash :|unique| lang-entries) (builtin #'unique 1))
+
+    lang-module))
+

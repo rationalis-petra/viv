@@ -10,9 +10,11 @@
 
 (defclass concrete-node (concrete)
   ((type
+    :type keyword
     :accessor node-type
     :initarg :type)
    (contents
+    :type list
     :accessor contents
     :initarg :contents))
   (:documentation "Concrete Syntax"))
@@ -25,6 +27,7 @@
 
 
 (defmethod print-object ((atom concrete-atom) stream)
+  (write-string "#a" stream)
   (print-object (contents atom) stream))
 
 (defmethod print-object ((node concrete-node) stream)
@@ -34,6 +37,7 @@
         (:stack (list #\[ #\]))
         (:query (list #\{ #\}))
         (t (list #\! #\!)))
+    (write-string "#n" stream)
     (write-char begin stream)
     (labels ((fgo (terms)
                (cond

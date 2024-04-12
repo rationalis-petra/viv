@@ -12,7 +12,7 @@
        (_ (error "Internal error: bad value returned from macro env"))))
 
     ((typep term 'concrete-atom)
-     (make-lit (contents term)))
+     (make-lit (lisp->viv (contents term))))
 
     ((typep term 'concrete-node)
      (case (node-type term)
@@ -40,14 +40,16 @@
 (defun to-abstract-expr (env elements)
   (when (= 0 (length elements))
     (error "Concrete expression node must have at least one element"))
-  (let ((comptime-val (and (typep (contents (car elements)) 'keyword)
-                           (env:lookup (contents (car elements)) env))))
-
-    (if (typep (cdr comptime-val) 'viv-former)
-        (form-expr env (cdr comptime-val) (cdr elements))
-        (make-instance 'sy-apply :fun (to-abstract env (car elements))
-                                 :args (mapcar (lambda (e) (to-abstract env e))
-                                               (cdr elements))))))
+  (let ((comptime-val (get-comptime env (car elements))))
+    (typecase comptime-val
+      (viv-former (form-expr env comptime-val (cdr elements)))
+      (viv-macro (macro-expand env comptime-val
+                               (make-instance 'concrete-node :type :expr
+                                                             :contents (cdr elements))))
+      (t 
+       (make-instance 'sy-apply :fun (to-abstract env (car elements))
+                                :args (mapcar (lambda (e) (to-abstract env e))
+                                              (cdr elements)))))))
 
 (declaim (ftype (function (env:macro-env viv-former list) viv-syntax) form-expr)) 
 (defun form-expr (env former args)
@@ -57,6 +59,15 @@
      (let ((symbol (get-symbol (elt args 0)))
            (body (to-abstract env (sub-expr (subseq args 1)))))
        (make-instance 'sy-def :var symbol :body body)))
+
+    (:seq
+     (make-instance 'sy-seq
+                    :terms (mapcar (lambda (e) (to-abstract env e)) args)))
+
+    (:macro
+     (make-instance 'sy-macro :body (to-abstract env (sub-expr args))))
+    (:quote
+     (make-instance 'sy-literal :value (concrete->val (sub-expr args))))
 
     (:function
      (assert (> (length args) 1))
@@ -110,6 +121,17 @@
 
     (t (error "unrecognized former!"))))
 
+(declaim (ftype (function (env:macro-env viv-macro concrete) viv-syntax) macro-expand)) 
+(defun macro-expand (env macro concrete)
+  (to-abstract
+   env
+   (val->concrete
+    (cadr 
+    (run (eval-term (env:macro->dynamic env)
+                    (make-instance 'sy-apply
+                                   :fun (make-instance 'sy-literal :value (body macro))
+                                   :args (list (make-instance 'sy-literal :value (concrete->val concrete))))))))))
+
 (defun to-patterns (env pat)
   (labels ((rec (term)
              (typecase term
@@ -122,17 +144,29 @@
            (pat-atom (atom)
              (typecase atom
                (keyword (make-instance 'pattern-any :var atom))
-               (t (error "expecting symbol!"))))
+               (viv-ival (make-instance 'pattern-ival
+                                        :name (name atom)
+                                        :subpatterns nil))
+               ;; TODO: what if ;; matching ival has values?
+               (t (error "expecting symbol or in pat-atom!"))))
 
            (pat-node (nodes)
-             (let ((head (get-symbol (car nodes)))
-                   (name (get-symbol (cadr nodes)))
+             (let ((head (car nodes))
                    (rest (mapcar (lambda (r) (rec r))
-                                 (cddr nodes))))
-               (assert (eq (former (cdr (env:lookup head env))) :constructor))
+                                 (cdr nodes))))
                (make-instance 'pattern-ival
-                              :name name
-                              :subpatterns rest))))
+                              :name (get-pattern-head head)
+                              :subpatterns rest)))
+           (get-pattern-head (head)
+             (if (typep head 'concrete-atom) 
+                 (progn
+                   (assert (typep (contents head) 'viv-ival))
+                   (assert (= 0 (length (vals (contents head)))))
+                   (name (contents head)))
+                 (progn
+                   (assert (= 2 (length (contents head))))
+                   (assert (eq (former (get-comptime env (car (contents head)))) :constructor))
+                   (cadr (contents head))))))
     (mapcar #'rec pat)))
 
 (defun to-clause (env raw)
@@ -158,3 +192,11 @@
 (defun to-abstract-query (env elements)
   (declare (ignore env elements))
   (error "abstrcat query not implemented"))
+
+
+(defun get-comptime (env term)
+  (or
+   (and (typep (contents term) 'keyword)
+        (cdr (env:lookup (contents term) env)))
+   (and (comptime-p (contents term))
+        (contents term))))

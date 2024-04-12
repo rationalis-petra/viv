@@ -1,4 +1,4 @@
-(in-package :viv)
+(in-package :foundation)
 
 ;; Eval monad
 ;; For now, we get delimited continuations
@@ -98,9 +98,4 @@
                     (pure (cons hd tl)))
                    (pure nil))))
     (rec sequence)))
-
-(defparameter *test-comp* 
-  (mapM
-   (lambda (x) (pure (+ x 2)))
-   (list 1 2 3)))
 

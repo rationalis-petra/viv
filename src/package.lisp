@@ -1,7 +1,18 @@
 (defpackage viv
-  (:use :cl :trivia)
+  (:use :cl :foundation :trivia)
   (:export
    :world
+
+   ;; values
+   :primop
+   :viv-num
+   :viv-module
+   :viv-former
+   :viv-values
+
+   ;; accessors
+   :num
+
    :viv-package
    :packages
    :prelude

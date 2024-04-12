@@ -9,13 +9,37 @@
     :accessor former
     :initarg :former
     :documentation "The head of an abstract syntax tree node")))
+(defclass viv-symbol (viv-value)
+  ((name
+    :accessor name
+    :initarg :name
+    :type keyword)))
+(defclass viv-unique (viv-value)
+  ((name
+    :accessor name
+    :initarg :name
+    :type symbol)))
+
+(declaim (ftype (function (string) viv-unique) mk-unique)) 
+(defun mk-unique (string) (make-instance 'viv-unique :name (gensym string)))
+
 (defun mk-former (symbol) (make-instance 'viv-former :former symbol))
 
 ;; Primitives and metaprogramming
 ;; formers: if, let, destructor, corecursor, constructor, recursor, stack
 (defclass viv-symbol (viv-value)
   ((m-symbol
-    :accessor m-symbol)))
+    :accessor m-symbol
+    :initarg :symbol)))
+
+(defclass viv-num (viv-value)
+  ((num
+    :accessor num
+    :initarg :num)))
+(defclass viv-string (viv-value)
+  ((str
+    :accessor str
+    :initarg :str)))
 
 (defclass primop (viv-value)
   ((arity
@@ -28,6 +52,15 @@
     :documentation "The function to invoke")))
 
 
+;; Logic programming
+(defclass viv-lvar (viv-value)
+  ((name
+   :accessor name
+   :initarg :name)
+   (uid
+    :accessor uid
+    :initarg :uid)))
+
 ;; Data Values 
 (defclass viv-coval (viv-value) ())
 
@@ -37,7 +70,8 @@
     :initarg :name)
    (vals
     :accessor vals
-    :initarg :vals)))
+    :initarg :vals
+    :initform nil)))
 
 (defclass viv-struct (viv-value)
   ((fields
@@ -45,6 +79,16 @@
     :initarg :fields
     :initform (make-hash-table)
     :documentation "The set of name,value pairs in the struct")))
+
+(defclass viv-ref (viv-value)
+  ((element
+    :accessor element
+    :initarg :element)))
+
+(defclass viv-macro (viv-value)
+  ((body
+    :accessor body
+    :initarg :body)))
 
 ;; Stack values
 (defclass viv-stackfun (viv-value)
@@ -96,3 +140,21 @@
     :initarg :name))
   (:documentation "A Module is much like a struct, but is able to influence how
   its' members are run (typechecked, not typechecked etc.)"))
+
+
+
+
+;; Printing
+
+(defmethod print-object ((value viv-num) stream)
+  (format stream "#n~A" (num value)))
+
+(defmethod print-object ((value viv-symbol) stream)
+  (format stream "#s~A" (m-symbol value)))
+
+(defmethod print-object ((value viv-ival) stream)
+  (write-string "#i(" stream)
+  (print-object (name value) stream)
+  (loop for elt in (vals value)
+        do (print-object elt stream))
+  (write-string ")" stream))

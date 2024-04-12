@@ -40,6 +40,11 @@
      (add-def (var term) val (env:env-world env) (env:env-package env) (env:env-module env))
      (pure val))))
 
+(defmethod eval-term (env (term sy-seq))
+  (mdo
+   (bind terms (mapM (lambda (term) (eval-term env term)) (terms term)))
+   (pure (car (last terms)))))
+
 (defmethod eval-term (env (term sy-function))
   (pure (make-instance 'viv-fun
                        :arity (length (args term))
@@ -47,6 +52,11 @@
                               (eval-term
                                (env:insert-many (mapcar #'cons (args term) args) env)
                                (body term))))))
+
+(defmethod eval-term (env (term sy-macro))
+  (mdo
+   (bind val (eval-term env (body term)))
+   (pure (make-instance 'viv-macro :body val))))
 
 (defmethod eval-term (env (term sy-apply))
   (mdo
@@ -64,6 +74,9 @@
       (mdo (bind args (mapM (lambda (e) (eval-term env e)) (args term)))
            (bind final-stack (stack-run (env callee) (program callee) args))
            (pure (to-values final-stack))))
+     (viv-ival
+      (mdo (bind args (mapM (lambda (e) (eval-term env e)) (args term)))
+           (pure (progn (setf (vals callee) (append args (vals callee))) callee))))
      (t (error  'bad-sort :expected-sort '(:fun :inductive))))))
 
 (defmethod eval-term (env (term sy-reset))
@@ -142,6 +155,7 @@
 
 
 
+
 ;; Stack Evaluation
 (defmethod eval-term (env (term sy-stackprog))
   (pure (make-instance 'viv-stackfun
@@ -169,9 +183,38 @@
          (error "not enough args on stack")
          (mdo (bind val (apply (fun word) (subseq stack 0 (arity word))))
               (pure (cons val (subseq stack (arity word)))))))
+    (viv-stackfun
+     (stack-run (env word) (program word) stack))
     (t (pure (cons word stack)))))
 
 (defun to-values (stack)
   (if (= (length stack) 1)
       (car stack)
       (make-instance 'viv-values :values stack)))
+
+
+
+;; Logical Evaluation
+
+;; Logical Search
+;; The search/query resolution algorithm. Uses delimited continuations to do
+;; depth-first proof search.
+(defun solve (vars term)
+  ()
+  )
+
+;; Unification
+
+;; The unification algorithm
+(declaim (ftype (function (env:dynamic-env viv-value viv-value) list) unify))
+(defun unify (env v1 v2)
+  (typecase v1
+    (viv-lvar
+     (occurs-check v1 v2)
+     (list (cons (name v1) v2)) ;; assoc-list
+     )))
+
+(defun occurs-check (l r)
+  (declare (ignore l r)))
+
+
