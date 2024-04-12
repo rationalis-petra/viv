@@ -20,9 +20,14 @@
       ((char= head #\()    (parse-list stream state))
       ((char= head #\[)    (parse-stack stream state))
       ((char= head #\{)    (parse-logic stream state))
-      ((digit-char-p head) (parse-number stream state))
       ((char= head #\")    (parse-string stream state))
       ((char= head #\:)    (parse-ival stream state))
+      ((char= head #\!)
+       (read-char t stream)
+       (make-instance 'concrete-node
+                      :type :expr
+                      :contents (list (parse-any stream state))))
+      ((digit-char-p head) (parse-number stream state))
       ((not (special-p head)) (parse-symbol stream state))
       (t (error "Bad Parse")))))
 
