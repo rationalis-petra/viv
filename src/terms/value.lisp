@@ -63,15 +63,15 @@
     :initarg :uid)))
 
 (defclass viv-rule (viv-value)
-  ((args
-    :accessor name
-    :initarg :name)
-   (head
-    :accessor head
-    :initarg :head)
-   (conditions
-    :accessor conditions
-    :initarg :conditions
+  ((vars
+    :accessor vars
+    :initarg :vars)
+   (goal
+    :accessor goal
+    :initarg :goal)
+   (subgoals
+    :accessor subgoals
+    :initarg :subgoals
     :initform nil)))
 
 (defclass viv-predicate (viv-value)

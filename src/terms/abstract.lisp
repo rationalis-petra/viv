@@ -145,13 +145,16 @@
 (defclass sy-rule (viv-syntax)
   ((vars
     :accessor vars
-    :initarg :vars)
+    :initarg :vars
+    :documentation "The (logical) variables introduced by the rule.")
    (goal
     :accessor goal
     :initarg :goal)
    (subgoals
     :accessor subgoals
-    :initarg :subgoals)))
+    :initarg :subgoals))
+  (:documentation "Form which generates a new rule. Rules can be inserted into
+  predicates as long as their arities match."))
 
 (defclass sy-goal (viv-syntax)
   ((head

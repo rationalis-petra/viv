@@ -194,15 +194,22 @@
 
 
 
-;; Logical Evaluation
+;;------------------------------------------------------------------------------
+;; Logic Syntax
+;;------------------------------------------------------------------------------
 
-;; Logical Search
 ;; The search/query resolution algorithm. Uses delimited continuations to do
 ;; depth-first proof search.
+
 (defmethod eval-term (env (term sy-predicate))
   (pure (make-instance 'viv-predicate
                  :arity (length (args term)))))
 
+(defmethod eval-term (env (term sy-rule))
+  (pure (make-instance 'viv-rule
+                       :vars (vars term)
+                       :goal (goal term)
+                       :subgoals (subgoals term))))
 
 ;; Unification
 

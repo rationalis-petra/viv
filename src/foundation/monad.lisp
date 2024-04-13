@@ -31,7 +31,9 @@
 
 
 
-(defgeneric run (monad))
+(defgeneric run (monad)
+  (:documentation "Generic function which runs the delimited continuation
+  computation represented by MONAD"))
 
 (defmethod run ((monad monad-pure))
   (list :value (val monad)))
@@ -68,8 +70,12 @@
 (defun bind (monad fun) (make-instance 'monad-bind :monad monad :fun fun))
 
 (declaim (ftype (function (monad monad) monad) seq))
-(defun seq  (m1 m2) (make-instance 'monad-bind :monad m1 :fun (lambda (x) m2)))
-(defun pure (val) (make-instance 'monad-pure :val val))
+(defun seq  (m1 m2)
+  "Create a delimited continuation monad representing running first M1 and then M2"
+  (make-instance 'monad-bind :monad m1 :fun (lambda (x) m2)))
+(defun pure (val)
+  "Create a (delimited continiation) monad that does nothing and returns VAL"
+  (make-instance 'monad-pure :val val))
 
 (defmacro mdo (&rest computations)
   (labels ((gofun (terms)
