@@ -72,9 +72,10 @@
 
     ;; logic
     (:predicate
-     (assert (= 1 (length args)))
+     (assert (< 1 (length args)))
      (make-instance 'sy-predicate
-                    :args (get-symlist (first args))))
+                    :args (get-symlist (first args))
+                    :rules (mapcar (lambda (e) (to-abstract env e)) (subseq args 1))))
     (:rule 
      ;; TODO: auto-capture vars if arglist is omitted
      (assert (< 1 (length args)))

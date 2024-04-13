@@ -202,8 +202,14 @@
 ;; depth-first proof search.
 
 (defmethod eval-term (env (term sy-predicate))
-  (pure (make-instance 'viv-predicate
-                 :arity (length (args term)))))
+  (mdo
+   (bind rules (mapM (lambda (term) (eval-term env term)) (rules term)))
+   (pure
+    (progn
+      (assert (every (lambda (v) (typep v 'viv-rule)) rules))
+      (make-instance 'viv-predicate
+                     :arity (length (args term))
+                     :rules rules)))))
 
 (defmethod eval-term (env (term sy-rule))
   (pure (make-instance 'viv-rule
