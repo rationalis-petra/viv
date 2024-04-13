@@ -199,9 +199,10 @@
 ;; Logical Search
 ;; The search/query resolution algorithm. Uses delimited continuations to do
 ;; depth-first proof search.
-(defun solve (vars term)
-  ()
-  )
+(defmethod eval-term (env (term sy-predicate))
+  (pure (make-instance 'viv-predicate
+                 :arity (length (args term)))))
+
 
 ;; Unification
 
@@ -209,7 +210,7 @@
 (declaim (ftype (function (env:dynamic-env viv-value viv-value) list) unify))
 (defun unify (env v1 v2)
   (typecase v1
-    (viv-lvar
+    (viv-ivar
      (occurs-check v1 v2)
      (list (cons (name v1) v2)) ;; assoc-list
      )))

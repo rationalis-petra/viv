@@ -64,11 +64,19 @@
      (make-instance 'sy-seq
                     :terms (mapcar (lambda (e) (to-abstract env e)) args)))
 
+    ;; meta
     (:macro
      (make-instance 'sy-macro :body (to-abstract env (sub-expr args))))
     (:quote
      (make-instance 'sy-literal :value (concrete->val (sub-expr args))))
 
+    ;; logic
+    (:predicate
+     (assert (= 1 (length args)))
+     (make-instance 'sy-predicate
+                    :args (get-symlist (first args))))
+
+    ;; functional
     (:function
      (assert (> (length args) 1))
      (let ((symlist (get-symlist (elt args 0))))

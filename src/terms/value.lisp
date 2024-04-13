@@ -61,6 +61,26 @@
     :accessor uid
     :initarg :uid)))
 
+(defclass viv-rule (viv-value)
+  ((args
+    :accessor name
+    :initarg :name)
+   (head
+    :accessor head
+    :initarg :head)
+   (conditions
+    :accessor conditions
+    :initarg :conditions
+    :initform nil)))
+
+(defclass viv-predicate (viv-value)
+  ((arity
+    :accessor arity
+    :initarg :arity)
+   (rules
+    :accessor rules
+    :initarg :rules)))
+
 ;; Data Values 
 (defclass viv-coval (viv-value) ())
 

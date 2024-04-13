@@ -133,18 +133,36 @@
   ((symbol)))
 
 ;; Query evaluation
-(defclass pred (viv-syntax)
-  ((arity)
-   (rules)))
-(defclass rule (viv-syntax)
-  ((parent-pred)
-   (name)
-   (terms)))
+(defclass sy-predicate (viv-syntax)
+  ((args
+    :accessor args
+    :initarg :args)
+   (rules
+    :accessor rules
+    :initarg :rules
+    :initform nil)))
+
+(defclass sy-rule (viv-syntax)
+  ((vars
+    :accessor vars
+    :initarg :vars)
+   (goal
+    :accessor goal
+    :initarg :goal)
+   (subgoals
+    :accessor subgoals
+    :initarg subgoals)))
+
+
+(defclass sy-lterm (viv-syntax)
+  ())
+
+(defclass sy-query (viv-syntax)
+  ((terms)))
+
 (defclass conj (viv-syntax)
   ((terms)))
 (defclass disj (viv-syntax)
-  ((terms)))
-(defclass seek-goal (viv-syntax)
   ((terms)))
 (defclass metavar (viv-syntax)
   ((symbol)))

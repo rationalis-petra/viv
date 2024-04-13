@@ -36,9 +36,23 @@
 
     (setf (gethash :|def| lang-entries) (mk-former :define))
 
+    ;; functional
     (setf (gethash :|fn| lang-entries)(mk-former :function))
     (setf (gethash :|app| lang-entries) (mk-former :app))
 
+    ;; imperative
+    (setf (gethash :|seq| lang-entries) (mk-former :seq))
+
+    (setf (gethash :|ref!| lang-entries) *builtin-ref*)
+    (setf (gethash :|get!| lang-entries) *builtin-get*)
+    (setf (gethash :|set!| lang-entries) *builtin-set*)
+
+    ;; logic
+    (setf (gethash :|query| lang-entries) (mk-former :query))
+    (setf (gethash :|rule| lang-entries) (mk-former :rule))
+    (setf (gethash :|pred| lang-entries) (mk-former :predicate))
+
+    ;; other
     (setf (gethash :|,| lang-entries) (mk-former :destructor))
     (setf (gethash :|object| lang-entries) (mk-former :corecursor))
 
@@ -51,11 +65,6 @@
     (setf (gethash :|shift| lang-entries) (mk-former :shift))
     (setf (gethash :|reset| lang-entries) (mk-former :reset))
 
-    (setf (gethash :|seq| lang-entries) (mk-former :seq))
-
-    (setf (gethash :|ref!| lang-entries) *builtin-ref*)
-    (setf (gethash :|get!| lang-entries) *builtin-get*)
-    (setf (gethash :|set!| lang-entries) *builtin-set*)
 
     (setf (gethash :|unique| lang-entries) (builtin #'unique 1))
 
