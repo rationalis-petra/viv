@@ -166,7 +166,13 @@
   (:documentation "A unification goal. Like a function call."))
 
 (defclass sy-query (viv-syntax)
-  ((terms)))
+  ((vars
+    :accessor vars
+    :initarg :vars)
+   (goal
+    :accessor goal
+    :initarg :goal))
+  (:documentation "Generate all substitutions as a stream of [values] objects"))
 
 (defclass conj (viv-syntax)
   ((terms)))

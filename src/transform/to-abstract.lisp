@@ -76,6 +76,7 @@
      (make-instance 'sy-predicate
                     :args (get-symlist (first args))
                     :rules (mapcar (lambda (e) (to-abstract env e)) (subseq args 1))))
+
     (:rule 
      ;; TODO: auto-capture vars if arglist is omitted
      (assert (< 1 (length args)))
@@ -89,6 +90,12 @@
                       :vars vars
                       :goal goal
                       :subgoals subgoals)))
+    (:query
+     (assert (= 2 (length args)))
+     ;; assert (typep (elt args 0))
+     (let* ((vars (get-symlist (elt args 0)))
+            (goal (to-abstract env (elt args 1))))
+       (make-instance 'sy-query :vars vars :goal goal)))
 
     ;; functional
     (:function
