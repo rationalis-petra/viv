@@ -18,7 +18,7 @@
      (case (node-type term)
        (:stack (to-abstract-stackprog env (contents term)))
        (:expr  (to-abstract-expr env (contents term)))
-       (:query (to-abstract-query env (contents term)))
+       (:logic (to-abstract-query env (contents term)))
        (t (error "Unrecognized node type"))))
     (t (error (format nil "Unrecognized concrete term")))))
 
@@ -75,6 +75,19 @@
      (assert (= 1 (length args)))
      (make-instance 'sy-predicate
                     :args (get-symlist (first args))))
+    (:rule 
+     ;; TODO: auto-capture vars if arglist is omitted
+     (assert (< 1 (length args)))
+     ;(assert (typep (elt args 0) 'concrete-node))
+     (let* ((vars (get-symlist (elt args 0)))
+            (new-env (env:shadow-vars vars env))
+            (goal (get-rule-head new-env (elt args 1)))
+            (subgoals (mapcar (lambda (c) (to-abstract env c))
+                              (subseq args 2))))
+       (make-instance 'sy-rule
+                      :vars vars
+                      :goal goal
+                      :subgoals subgoals)))
 
     ;; functional
     (:function
@@ -177,6 +190,41 @@
                    (cadr (contents head))))))
     (mapcar #'rec pat)))
 
+
+;;------------------------------------------------------------------------------
+;; Logic Syntax
+;;------------------------------------------------------------------------------
+
+(declaim (ftype (function (env:macro-env list) viv-syntax) to-abstract-goal))
+(defun to-abstract-goal (env elements)
+  ;; head needs to be
+  (assert (< 1 (length elements)))
+  (let ((head (to-abstract (elt elements 0)))
+        (args (to-abstract (subeq elements 1))))
+    (make-instace 'sy-goal
+                  :head head
+                  :args args)))
+
+
+
+
+;;------------------------------------------------------------------------------
+;; Utility
+;;------------------------------------------------------------------------------
+
+(defun get-comptime (env term)
+  (or
+   (and (typep (contents term) 'keyword)
+        (cdr (env:lookup (contents term) env)))
+   (and (comptime-p (contents term))
+        (contents term))))
+
+(defun get-rule-head (env term)
+  (assert (typep term 'concrete-node))
+  (assert (eq (node-type term) :logic))
+  (mapcar (lambda (term) (to-abstract env term)) (contents term)))
+
+
 (defun to-clause (env raw)
   (assert (typep raw 'concrete-node))
   (let* ((idx (position nil (contents raw)
@@ -195,16 +243,3 @@
   (if (= (length args) 1)
       (elt args 0)
       (make-instance 'concrete-node :type :expr :contents args)))
-
-(declaim (ftype (function (env:macro-env list) viv-syntax) to-abstract-query))
-(defun to-abstract-query (env elements)
-  (declare (ignore env elements))
-  (error "abstrcat query not implemented"))
-
-
-(defun get-comptime (env term)
-  (or
-   (and (typep (contents term) 'keyword)
-        (cdr (env:lookup (contents term) env)))
-   (and (comptime-p (contents term))
-        (contents term))))

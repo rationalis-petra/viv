@@ -36,6 +36,7 @@
   ((num
     :accessor num
     :initarg :num)))
+
 (defclass viv-string (viv-value)
   ((str
     :accessor str

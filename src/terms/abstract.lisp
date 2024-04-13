@@ -151,11 +151,16 @@
     :initarg :goal)
    (subgoals
     :accessor subgoals
-    :initarg subgoals)))
+    :initarg :subgoals)))
 
-
-(defclass sy-lterm (viv-syntax)
-  ())
+(defclass sy-goal (viv-syntax)
+  ((head
+    :accessor head
+    :initarg :head)
+   (args
+    :accessor args
+    :initarg :args))
+  (:documentation "A unification goal. Like a function call."))
 
 (defclass sy-query (viv-syntax)
   ((terms)))

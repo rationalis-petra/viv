@@ -2,73 +2,50 @@
 
 
 ;; Take an input stream; convert to a concrete syntax tree
-;; The current parse-state represents row/col number
 ;; 
 
 
-(defun start-state () (cons 0 0))
-
 (defun parse (stream)
-  (parse-any stream (start-state)))
+  (parse-any stream))
 
 (defun special-p (char)
   (some (lambda (c) (char= char c)) (list #\( #\) #\[ #\] #\{ #\} #\:)))
 
-(defun parse-any (stream state)
+(defun parse-any (stream)
   (let ((head (peek-char t stream)))
     (cond
-      ((char= head #\()    (parse-list stream state))
-      ((char= head #\[)    (parse-stack stream state))
-      ((char= head #\{)    (parse-logic stream state))
-      ((char= head #\")    (parse-string stream state))
-      ((char= head #\:)    (parse-ival stream state))
+      ((char= head #\()    (parse-node stream :expr #\)))
+      ((char= head #\[)    (parse-node stream :stack #\]))
+      ((char= head #\{)    (parse-node stream :logic #\}))
+      ((char= head #\")    (parse-string stream))
+      ((char= head #\:)    (parse-ival stream))
       ((char= head #\!)
        (read-char t stream)
        (make-instance 'concrete-node
                       :type :expr
-                      :contents (list (parse-any stream state))))
-      ((digit-char-p head) (parse-number stream state))
-      ((not (special-p head)) (parse-symbol stream state))
+                      :contents (list (parse-any stream))))
+      ((digit-char-p head) (parse-number stream))
+      ((not (special-p head)) (parse-symbol stream))
       (t (error "Bad Parse")))))
 
-(defun parse-list (stream state)
+(declaim (ftype (function (stream keyword character) concrete-node) parse-node))
+(defun parse-node (stream type terminator)
   (read-char nil stream)
   (loop 
     for head = (peek-char t stream) then (peek-char t stream)
-    do (when (char= #\) head)
+    do (when (char= terminator head)
          (read-char t stream)
          (return
-           (make-instance 'concrete-node :type :expr :contents exprs)))
-    collect (parse-any stream state) into exprs))
+           (make-instance 'concrete-node :type type :contents exprs)))
+    collect (parse-any stream) into exprs))
 
-(defun parse-ival (stream state)
+(defun parse-ival (stream)
   (read-char nil stream)
-  (let ((next (parse-any stream state)))
+  (let ((next (parse-any stream)))
     (assert (typep (contents next) 'keyword))
     (make-instance 
      'concrete-atom
      :contents (make-instance 'viv-ival :name (contents next)))))
-
-(defun parse-stack (stream state)
-  (read-char nil stream) ;; remove leading '['
-  (loop 
-    for head = (peek-char t stream) then (peek-char t stream)
-    do
-       (when (char= #\] head)
-         (read-char t stream)
-         (return
-           (make-instance 'concrete-node :type :stack :contents exprs)))
-    collect (parse-any stream state) into exprs))
-
-(defun parse-logic (stream state)
-  (read-char nil stream)
-  (loop 
-    for head = (peek-char t stream) then (peek-char t stream)
-    do
-       (when (char= #\} head)
-         (return
-           (make-instance 'concrete-node :type :stack :contents exprs)))
-    collect (parse-any stream state) into exprs))
 
 (defun list-to-num (lst)
   (make-instance
@@ -79,16 +56,15 @@
      and digit = 1 then (* 10 digit)
      sum (* num digit))))
 
-(defun parse-number (stream state)
+(defun parse-number (stream)
   (list-to-num 
     (loop 
       do
          (unless (digit-char-p (peek-char nil stream)) (return nums))
       collect (digit-char-p (read-char nil stream)) into nums)))
 
-(declaim (ftype (function (stream t) concrete) parse-string))  
-(defun parse-string (stream state)
-  (declare (ignore state))
+(declaim (ftype (function (stream) concrete) parse-string))  
+(defun parse-string (stream)
   (read-char nil stream)
   (make-instance
    'concrete-atom
@@ -102,7 +78,7 @@
       collect (read-char nil stream) into chars)
     'string)))
 
-(defun parse-symbol (stream state)
+(defun parse-symbol (stream)
   (make-instance 
    'concrete-atom
    :contents

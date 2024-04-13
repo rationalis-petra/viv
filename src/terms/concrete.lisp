@@ -6,7 +6,7 @@
   (:documentation "Concrete Syntax Root"))
 
 ;; Types:
-;; • expr, stack, query
+;; • expr, stack, logic
 
 (defclass concrete-node (concrete)
   ((type
@@ -35,7 +35,7 @@
       (case (node-type node)
         (:expr (list #\( #\)))
         (:stack (list #\[ #\]))
-        (:query (list #\{ #\}))
+        (:logic (list #\{ #\}))
         (t (list #\! #\!)))
     (write-string "#n" stream)
     (write-char begin stream)
