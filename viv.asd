@@ -54,8 +54,7 @@
     eval
     :pathname "eval"
     :depends-on (foundation terms binding)
-    :components ((:file "eval-canonical")
-                 (:file "eval-syntax")))
+    :components ((:file "eval-syntax")))
 
    (:module
     analysis
