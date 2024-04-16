@@ -53,7 +53,7 @@
     (setf (gethash :|pred| lang-entries) (mk-former :predicate))
 
     ;; other
-    (setf (gethash :|,| lang-entries) (mk-former :destructor))
+    (setf (gethash :|.| lang-entries) (mk-former :destructor))
     (setf (gethash :|object| lang-entries) (mk-former :corecursor))
 
     (setf (gethash :|:| lang-entries) (mk-former :constructor))

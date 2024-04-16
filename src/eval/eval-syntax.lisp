@@ -76,7 +76,22 @@
            (pure (to-values final-stack))))
      (viv-ival
       (mdo (bind args (mapM (lambda (e) (eval-term env e)) (args term)))
-           (pure (progn (setf (vals callee) (append args (vals callee))) callee))))
+           (pure
+            (make-instance 'viv-ival :name (name callee) :args (append args (vals callee))))))
+     (viv-projector
+      (assert (= (length (args term)) 1))
+      (mdo (bind val (mapM (lambda (e) (eval-term env e)) (car (args term))))
+           (pure
+            (progn
+              (assert (typep val 'viv-structure))
+              (gethash (field callee) (fields val))))))
+     (viv-destructor
+      (assert (= (length (args term)) 1))
+      (mdo (bind val (eval-term env (car (args term))))
+           (progn
+             (assert (typep val 'viv-coval))
+             (funcall (gethash (field callee) (fields val))))))
+
      (t (error  'bad-sort :expected-sort '(:fun :inductive))))))
 
 (defmethod eval-term (env (term sy-reset))
@@ -95,19 +110,48 @@
      (pure (make-instance 'viv-struct :fields map)))))
 
 (defmethod eval-term (env (term sy-projector))
-  (mdo
-   (bind struct (eval-term env (value term)))
-   (pure (or (gethash (field term) (fields struct))
-             (error (format nil "field not found: ~A in ~A~%"
-                            (field term)
-                            (fields struct)))))))
+  (pure (make-instance 'viv-projector :field (field term))))
+
+(defmethod eval-term (env (term sy-corecursor))
+  ;; Corecursor (object) evaluation
+  ;; 1. The priary representation of the corecursive object is map of functions,
+  ;;    each of which takes 'internal state' parameters as arguments, 
+  ;; 
+  (labels ((make-fun (vals clauses)
+             (lambda ()
+               (loop
+                 for clause in clauses
+                 for match-res = (try-comatch clause vals)
+                 do (when match-res (return (exec-match match-res)))
+                 ;; if no match has been successful, error!
+                 finally (error "comatch failed!"))))
+
+           (exec-match (match-res)
+             (eval-term 
+              ;; TODO: what if recursive name?
+              (env:insert-many (car match-res) env)
+              (cdr match-res))))
+    (mdo 
+     (bind vals (mapM (lambda (v) (eval-term env v)) (vals term)))
+     (loop
+       with out-map = (make-hash-table)
+       for clause-set in (group-by (clauses term)
+                                   :key (lambda (clause) (name (car clause)))
+                                   :value #'identity)
+       do (progn
+            (setf (gethash (car clause-set) out-map)
+                  (make-fun vals (cdr clause-set))))
+       finally (return (pure (make-instance 'viv-coval :fields out-map)))))))
+
+
+
 
 (defmethod eval-term (env (term sy-constructor))
   (mdo
    (bind vals (mapM (lambda (val) (eval-term env val)) (args term)))
    (pure (make-instance 'viv-ival :name (name term) :vals vals))))
 
-(declaim (ftype (function (sy-pattern t) t) match-pattern)) 
+(declaim (ftype (function (sy-pattern t) t) match-pattern))
 (defun match-pattern (pattern val)
   (typecase pattern
     (pattern-any
@@ -123,10 +167,16 @@
          :false))
     (t (error (format nil "bad-pattern: ~A~%" pattern)))))
 
-(defun try-match (clause args)
-  (assert (= (length args) (length (car clause))))
+(defun try-match (coclause args)
   (let* ((pattern (car clause))
          (binds (mapcar #'match-pattern pattern args)))
+    (when (every (lambda (x) (not (eq x :false))) binds)
+      (cons (reduce #'append  binds) (cdr clause)))))
+
+(defun try-comatch (clause args)
+  (assert (= (length args) (length (subpatterns (car clause)))))
+  (let* ((pattern (car clause))
+         (binds (mapcar #'match-pattern (subpatterns pattern) args)))
     (when (every (lambda (x) (not (eq x :false))) binds)
       (cons (reduce #'append  binds) (cdr clause)))))
 
@@ -145,6 +195,7 @@
               (let* ((match-res (get-match-term args (clauses term)))
                      (new-env (env:insert-many
                                (append (car match-res)
+                                       ;; TODO: if recur not bound, don't add to environment 
                                        (list (cons (name term)
                                                    (make-instance 'primop
                                                                   :arity (length args)
@@ -217,7 +268,15 @@
                        :goal (goal term)
                        :subgoals (subgoals term))))
 
+(defmethod eval-term (env (term sy-query))
+  (let* ((next (run-query env (vars term) (goal term))))
+    (pure next)))
+
 ;; Unification
+;; Queries run as follows:
+;(defun run-query (vars head))
+
+
 
 ;; The unification algorithm
 (declaim (ftype (function (env:dynamic-env viv-value viv-value) list) unify))
@@ -226,6 +285,8 @@
     (viv-ivar
      (occurs-check v1 v2)
      (list (cons (name v1) v2)) ;; assoc-list
+
+     
      )))
 
 (defun occurs-check (l r)

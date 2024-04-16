@@ -7,6 +7,9 @@
    :->>
    :id
 
+   ;; sequecne
+   :group-by
+
    ;; agent 
    :system
    :agents

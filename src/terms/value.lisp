@@ -83,7 +83,15 @@
     :initarg :rules)))
 
 ;; Data Values 
-(defclass viv-coval (viv-value) ())
+(defclass viv-coval (viv-value)
+  ((fields
+    :accessor fields
+    :initarg :fields)))
+
+(defclass viv-destructor (viv-value)
+  ((field
+    :accessor field
+    :initarg :field)))
 
 (defclass viv-ival (viv-value)
   ((name
@@ -100,6 +108,11 @@
     :initarg :fields
     :initform (make-hash-table)
     :documentation "The set of name,value pairs in the struct")))
+
+(defclass viv-projector (viv-value)
+  ((field
+    :accessor field
+    :initarg :field)))
 
 (defclass viv-ref (viv-value)
   ((element

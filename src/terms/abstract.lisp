@@ -63,12 +63,20 @@
     :accessor body)))
 
 (defclass sy-corecursor (viv-syntax)
-  ((recname)
-   (vals)
-   (coclauses)))
+  ((name
+    :accessor name
+    :initarg :name)
+   (vals
+    :accessor vals
+    :initarg :vals)
+   (clauses
+    :accessor clauses
+    :initarg :clauses)))
 (defclass sy-destructor (viv-syntax)
-  ((name)
-   (val)))
+  ((field
+    :initarg :field
+    :accessor field))
+  (:documentation "Project out a value from a destructor."))
 
 (defclass sy-constructor (viv-syntax)
   ((name
@@ -101,16 +109,21 @@
     :initarg :subpatterns
     :accessor subpatterns)))
 
+(defclass sy-copattern ()
+  ((name
+    :initarg :name
+    :accessor name)
+   (subpatterns
+    :initarg :subpatterns
+    :accessor subpatterns)))
+
 
 (defclass sy-structure (viv-syntax)
   ((fields
     :initarg :fields
     :accessor fields)))
 (defclass sy-projector (viv-syntax)
-  ((value
-    :initarg :value
-    :accessor value)
-   (field
+  ((field
     :initarg :field
     :accessor field)))
 
@@ -180,5 +193,20 @@
   ((terms)))
 (defclass metavar (viv-syntax)
   ((symbol)))
+
+
+;;------------------------------------------------------------------------------
+;; Printing
+;;------------------------------------------------------------------------------
+
+(defmethod print-object ((value sy-copattern) stream)
+  (write-string "co(" stream)
+  (print-object (name value) stream)
+  (format stream "~{~A ~}" (subpatterns value))
+  (print-object (name value) stream)
+  (write-string ")" stream))
+
+(defmethod print-object ((value pattern-any) stream)
+  (format stream "#s~A" (var value)))
 
 

@@ -18,7 +18,15 @@
       ((char= head #\[)    (parse-node stream :stack #\]))
       ((char= head #\{)    (parse-node stream :logic #\}))
       ((char= head #\")    (parse-string stream))
-      ((char= head #\:)    (parse-ival stream))
+      ((char= head #\:)
+       (parse-symbolic
+        stream
+        (lambda (next)
+          (make-instance 'viv-ival :name (contents next)))))
+      ((char= head #\.)
+       (parse-symbolic
+        stream
+        (lambda (next) (make-instance 'viv-destructor :field (contents next))))) 
       ((char= head #\!)
        (read-char t stream)
        (make-instance 'concrete-node
@@ -39,13 +47,13 @@
            (make-instance 'concrete-node :type type :contents exprs)))
     collect (parse-any stream) into exprs))
 
-(defun parse-ival (stream)
+(defun parse-symbolic (stream fun)
   (read-char nil stream)
   (let ((next (parse-any stream)))
     (assert (typep (contents next) 'keyword))
     (make-instance 
      'concrete-atom
-     :contents (make-instance 'viv-ival :name (contents next)))))
+     :contents (funcall fun next))))
 
 (defun list-to-num (lst)
   (make-instance

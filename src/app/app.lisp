@@ -16,12 +16,12 @@
                        :name "Viv World")))
 
 
-(defun run-line ()
+(defun run-line-async ()
   (let* ((concrete (parse *standard-input*)))
     (send-message (list :eval concrete) *world-agent*)))
 
 
-(defun run-abs-line ()
+(defun run-abs-line-async ()
   (let* ((concrete (parse *standard-input*))
          (abstract (to-abstract (default-environment) concrete)))
     (format t "Concrete: ~A~%" concrete)
@@ -29,7 +29,7 @@
     (eval-term abstract)))
 
 
-(defun abs-line ()
+(defun abs-line-async ()
   (let* ((concrete (parse *standard-input*)))
     (format t "Concrete: ~A~%" concrete)
     (to-abstract (default-environment) concrete)))

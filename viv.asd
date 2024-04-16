@@ -96,4 +96,5 @@
     ((:file "monad" :depends-on ("package"))
      (:file "agent" :depends-on ("package"))
      (:file "function" :depends-on ("package"))
+     (:file "sequence" :depends-on ("package"))
      (:file "package")))))

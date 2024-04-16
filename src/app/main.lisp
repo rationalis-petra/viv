@@ -14,14 +14,14 @@
                                          :package :|viv-user|
                                          :module '(:|viv-user|)))
 
-(defun run-conc-line-sync ()
+(defun run-conc-line()
   "Synchronously read a line from *stadnard-input* and evaluate it"
   (let* ((*current-world* *prime-world*)
          (concrete (parse *standard-input*)))
     (format t "Concrete: ~A~%" concrete)
     (eval-concrete concrete (default-dynamic-env *prime-world*))))
 
-(defun repl-sync ()
+(defun repl ()
   (handler-case
       (let* ((*current-world* *prime-world*))
         (loop
@@ -35,17 +35,17 @@
       (declare (ignore exit))
       "exited")))
 
-(defun run-line-sync ()
+(defun run-line ()
   (let* ((*current-world* *prime-world*)
          (concrete (parse *standard-input*))
          (abstract (to-abstract (default-macro-env *prime-world*) concrete)))
     (run (eval-term (default-dynamic-env *prime-world*) abstract))))
 
-(defun abs-line-sync ()
+(defun abs-line ()
   (let* ((*current-world* *prime-world*)
          (concrete (parse *standard-input*)))
     (to-abstract (default-macro-env *prime-world*) concrete)))
 
-(defun conc-line-sync ()
+(defun conc-line ()
   (parse *standard-input*))
 

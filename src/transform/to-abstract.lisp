@@ -124,10 +124,27 @@
               args)))
 
     (:projector
-     (assert (= (length args) 2))
-     (let ((sym (get-symbol (elt args 1)))
-           (struct (to-abstract env (elt args 0))))
-       (make-instance 'sy-projector :field sym :value struct)))
+     (assert (= (length args) 1))
+     (let ((sym (get-symbol (elt args 1))))
+       (make-instance 'sy-projector :field sym)))
+
+    (:destructor
+     (assert (= (length args) 1))
+     (let ((sym (get-symbol (elt args 0))))
+       (make-instance 'sy-destructor :field sym)))
+
+    (:corecursor
+     (let* ((recsym (when (typep (contents (elt args 0)) 'keyword)
+                      (contents (elt args 0))))
+            (initial-vals (mapcar (lambda (v) (to-abstract env v))
+                                (get-list (elt args (if recsym 1 0)))))
+            (raw-clauses (subseq args (if recsym 2 1)))
+            (new-env (if recsym (env:shadow-var recsym env) env)))
+       (make-instance
+        'sy-corecursor
+        :name recsym
+        :vals initial-vals
+        :clauses (mapcar (lambda (c) (to-coclause new-env c)) raw-clauses))))
 
     (:constructor
      (let ((sym (get-symbol (elt args 0))))
@@ -198,6 +215,21 @@
                    (cadr (contents head))))))
     (mapcar #'rec pat)))
 
+(defun to-copattern (env nodes)
+  (flet ((get-copattern-head (head)
+           (if (typep head 'concrete-atom) 
+               (field (contents head))
+               (progn
+                 (assert (= 2 (length (contents head))))
+                 (assert (eq (former (get-comptime env (car (contents head)))) :destructor))
+                 (cadr (contents head))))))
+    (let* ((head (car nodes))
+           (rest (to-patterns env (cdr nodes))))
+      (make-instance 'sy-copattern
+                     :name (get-copattern-head head)
+                     :subpatterns rest))))
+
+
 
 ;;------------------------------------------------------------------------------
 ;; Logic Syntax
@@ -212,7 +244,6 @@
     (make-instace 'sy-goal
                   :head head
                   :args args)))
-
 
 
 
@@ -243,8 +274,17 @@
          (patterns (to-patterns env (subseq (contents raw) 0 idx)))
          (new-env (env:shadow-vars (reduce #'append (mapcar #'pattern-vars patterns)) env)))
     (cons patterns (to-abstract new-env (sub-expr (subseq (contents raw) (+ idx 1)))))))
-  
 
+(defun to-coclause (env raw)
+  (assert (typep raw 'concrete-node))
+  (let* ((idx (position nil (contents raw)
+                        :test (lambda (_ val)
+                                (declare (ignore _))
+                                (or (eq (contents val) :→)
+                                    (eq (contents val) :->)))))
+         (patterns (to-copattern env (subseq (contents raw) 0 idx)))
+         (new-env (env:shadow-vars (copattern-vars patterns) env)))
+    (cons patterns (to-abstract new-env (sub-expr (subseq (contents raw) (+ idx 1)))))))
 
 (declaim (ftype (function (list) concrete)))
 (defun sub-expr (args)
