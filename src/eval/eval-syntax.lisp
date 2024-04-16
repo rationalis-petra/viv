@@ -90,7 +90,7 @@
       (mdo (bind val (eval-term env (car (args term))))
            (progn
              (assert (typep val 'viv-coval))
-             (funcall (gethash (field callee) (fields val))))))
+             (funcall (gethash (field callee) (fields val)) (vals val)))))
 
      (t (error  'bad-sort :expected-sort '(:fun :inductive))))))
 
@@ -114,22 +114,26 @@
 
 (defmethod eval-term (env (term sy-corecursor))
   ;; Corecursor (object) evaluation
-  ;; 1. The priary representation of the corecursive object is map of functions,
+  ;; 1. The primary representation of the corecursive object is map of functions,
   ;;    each of which takes 'internal state' parameters as arguments, 
   ;; 
-  (labels ((make-fun (vals clauses)
-             (lambda ()
+  (labels ((make-fun (clauses rec)
+             (lambda (vals)
                (loop
                  for clause in clauses
                  for match-res = (try-comatch clause vals)
-                 do (when match-res (return (exec-match match-res)))
+                 do (when match-res
+                      (return (exec-match match-res rec)))
                  ;; if no match has been successful, error!
                  finally (error "comatch failed!"))))
 
-           (exec-match (match-res)
+           (exec-match (match-res rec)
              (eval-term 
               ;; TODO: what if recursive name?
-              (env:insert-many (car match-res) env)
+              (env:insert-many (append (car match-res)
+                                       (when (name term)
+                                         (list (cons (name term) rec))))
+                               env)
               (cdr match-res))))
     (mdo 
      (bind vals (mapM (lambda (v) (eval-term env v)) (vals term)))
@@ -138,10 +142,17 @@
        for clause-set in (group-by (clauses term)
                                    :key (lambda (clause) (name (car clause)))
                                    :value #'identity)
-       do (progn
-            (setf (gethash (car clause-set) out-map)
-                  (make-fun vals (cdr clause-set))))
-       finally (return (pure (make-instance 'viv-coval :fields out-map)))))))
+       do (setf (gethash (car clause-set) out-map)
+                (make-fun (cdr clause-set)
+                          (make-instance 
+                           'primop
+                           :arity (length vals)
+                           :fun 
+                           (lambda (&rest vals)
+                             (pure (make-instance 'viv-coval
+                                                  :fields out-map
+                                                  :vals vals))))))
+       finally (return (pure (make-instance 'viv-coval :fields out-map :vals vals)))))))
 
 
 

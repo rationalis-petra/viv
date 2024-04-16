@@ -84,7 +84,10 @@
 
 ;; Data Values 
 (defclass viv-coval (viv-value)
-  ((fields
+  ((vals
+    :accessor vals
+    :initarg :vals)
+   (fields
     :accessor fields
     :initarg :fields)))
 
