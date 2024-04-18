@@ -11,8 +11,6 @@
   (:documentation "The world state of a viv instance"))
 
 
-(defvar *current-world*)
-
 
 (defmethod initialize-instance ((world world) &key packages &allow-other-keys)
   (let* ((packages (or packages (make-hash-table)))

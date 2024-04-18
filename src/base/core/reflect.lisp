@@ -67,16 +67,19 @@
             (setf (gethash symbol module) val)))))
 
 ;; remove val from module
-(defvar *bulitin-module-remove*
-  (make-instance
-   'primop
-   :arity 2
-   :fun (lambda (name module)
-          (assert (typep module 'viv:viv-module))
-          (let ((symbol (viv->lisp name)))
-            (assert (typep symbol 'keyword))
-            (remhash symbol module)))))
+(defun bulitin-module-remove (name module)
+  (assert (typep module 'viv:viv-module))
+  (let ((symbol (viv->lisp name)))
+    (assert (typep symbol 'keyword))
+    (remhash symbol module)))
 
+(defun builtin-repr (val)
+  (pure
+   (let ((viv:*print-repr* t))
+     (make-instance
+      'viv:viv-string :str
+      (with-output-to-string (out)
+        (print-object val out))))))
 
 
 (defun make-reflect-module ()
@@ -105,6 +108,10 @@
     (setf (gethash :|get-exports| reflect-entries)   *builtin-get-exports*)
     ;(setf (gethash :|set-exports| reflect-entries)   *builtin-set-package*)
     (setf (gethash :|module-insert| reflect-entries) *bulitin-module-insert*)
-    (setf (gethash :|module-remove| reflect-entries) *bulitin-module-remove*)
+    (setf (gethash :|module-remove| reflect-entries) #'bulitin-module-remove)
+
+
+    (setf (gethash :|repr| reflect-entries)  (builtin #'builtin-repr 1))
+
     reflect-module))
   

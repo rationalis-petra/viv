@@ -14,7 +14,7 @@
                                          :package :|viv-user|
                                          :module '(:|viv-user|)))
 
-(defun run-conc-line()
+(defun run-conc-line ()
   "Synchronously read a line from *stadnard-input* and evaluate it"
   (let* ((*current-world* *prime-world*)
          (concrete (parse *standard-input*)))

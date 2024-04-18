@@ -6,9 +6,12 @@
    ;; values
    :primop
    :viv-num
+   :viv-string
    :viv-module
    :viv-former
    :viv-values
+
+   :*print-repr*
 
    ;; accessors
    :num
@@ -21,3 +24,10 @@
    :name
    :m-symbol
    :comptime-p))
+
+(in-package :viv)
+
+;; Globals
+
+(defvar *current-world*) 
+(defvar *print-repr* nil)

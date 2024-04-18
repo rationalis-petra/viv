@@ -43,6 +43,11 @@
     ;; imperative
     (setf (gethash :|seq| lang-entries) (mk-former :seq))
 
+    (setf (gethash :|object| lang-entries) (mk-former :object))
+    (setf (gethash :|actor| lang-entries) (mk-former :actor))
+    (setf (gethash :|sets| lang-entries) (mk-former :slot-set))
+
+    ;; TOOD: rewrite ref, get, set as objects!
     (setf (gethash :|ref!| lang-entries) *builtin-ref*)
     (setf (gethash :|get!| lang-entries) *builtin-get*)
     (setf (gethash :|set!| lang-entries) *builtin-set*)
@@ -53,13 +58,14 @@
     (setf (gethash :|pred| lang-entries) (mk-former :predicate))
 
     ;; other
-    (setf (gethash :|.| lang-entries) (mk-former :destructor))
-    (setf (gethash :|object| lang-entries) (mk-former :corecursor))
+    (setf (gethash :|;| lang-entries) (mk-former :destructor))
+    (setf (gethash :|producer| lang-entries) (mk-former :corecursor))
 
     (setf (gethash :|:| lang-entries) (mk-former :constructor))
     (setf (gethash :|match| lang-entries) (mk-former :recursor))
 
-    (setf (gethash :|/| lang-entries) (mk-former :projector))
+
+    (setf (gethash :|.| lang-entries) (mk-former :projector))
     (setf (gethash :|struct| lang-entries) (mk-former :structure))
 
     (setf (gethash :|shift| lang-entries) (mk-former :shift))

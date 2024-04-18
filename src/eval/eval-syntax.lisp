@@ -28,7 +28,11 @@
   (:documentation "Evaluate TERM in ENV. Here, evaluate means to"))
 
 (defmethod eval-term (env (term sy-variable))
-  (pure (env:lookup (viv:m-symbol term) env)))
+  (pure
+   (let ((res (env:lookup (viv:m-symbol term) env)))
+     (if (typep res 'viv-slot)
+       (gethash (name res) (slots (object res)))
+       res))))
 
 (defmethod eval-term (env (term sy-literal))
   (pure (value term)))
@@ -77,20 +81,26 @@
      (viv-ival
       (mdo (bind args (mapM (lambda (e) (eval-term env e)) (args term)))
            (pure
-            (make-instance 'viv-ival :name (name callee) :args (append args (vals callee))))))
+            (make-instance 'viv-ival :name (name callee) :vals (append args (vals callee))))))
      (viv-projector
       (assert (= (length (args term)) 1))
       (mdo (bind val (mapM (lambda (e) (eval-term env e)) (car (args term))))
            (pure
             (progn
-              (assert (typep val 'viv-structure))
+              (assert (typep val 'viv-struct))
               (gethash (field callee) (fields val))))))
      (viv-destructor
-      (assert (= (length (args term)) 1))
       (mdo (bind val (eval-term env (car (args term))))
-           (progn
-             (assert (typep val 'viv-coval))
-             (funcall (gethash (field callee) (fields val)) (vals val)))))
+           (bind args (mapM (lambda (v) (eval-term env v)) (cdr (args term))))
+           (typecase val
+             (viv-coval
+              (assert (null args))
+              (funcall (gethash (field callee) (fields val)) (vals val)))
+             (viv-object
+              (funcall (gethash (field callee) (messages val)) args))
+             (viv-actor
+              (funcall (gethash (field callee) (messages val)) args))
+             (t (error "Destructor operated on bad sort!")))))
 
      (t (error  'bad-sort :expected-sort '(:fun :inductive))))))
 
@@ -154,6 +164,66 @@
                                                   :vals vals))))))
        finally (return (pure (make-instance 'viv-coval :fields out-map :vals vals)))))))
 
+(defmethod eval-term (env (term sy-object))
+  ;; Corecursor (object) evaluation
+  ;; 1. The primary representation of the corecursive object is map of functions,
+  ;;    each of which takes 'internal state' parameters as arguments, 
+  ;; 
+  (labels ((make-fun (clauses self env)
+             (lambda (vals)
+               (loop
+                 for clause in clauses
+                 for match-res = (try-comatch clause vals)
+                 do (when match-res
+                      (return (exec-match match-res self env)))
+                 ;; if no match has been successful, error!
+                 finally (error "comatch failed!"))))
+
+           (exec-match (match-res self env)
+             (eval-term 
+              (env:insert-many (append (car match-res)
+                                       (when (name term)
+                                         (list (cons (name term) self))))
+                               env)
+              (cdr match-res))))
+    (mdo 
+     (bind sbinds (mapM (lambda (v) (eval-term env (cdr v))) (slots term)))
+     (loop
+       with self = (make-instance
+                    (if (eq :synchronous (synchrony term))
+                        'viv-object
+                        'viv-actor)
+                    :slots (alist->table
+                            (mapcar (lambda (s v) (cons (car s) v))
+                                    (slots term) sbinds))
+                    :name (name term))
+       with slots = (mapcar (lambda (pr) (make-instance 'viv-slot
+                                                        :object self
+                                                        :name (car pr)))
+                            (slots term))
+       with new-env = (env:insert-many (mapcar (lambda (pr val) (cons (car pr) val))
+                                                (slots term)
+                                                slots)
+                                     env)
+       with out-map = (make-hash-table)
+       for clause-set in (group-by (clauses term)
+                                   :key (lambda (clause) (name (car clause)))
+                                   :value #'identity)
+       do (setf (gethash (car clause-set) out-map)
+                (make-fun (cdr clause-set) self new-env))
+       finally
+          (progn
+            (setf (messages self) out-map)
+            (return (pure self)))))))
+(defmethod eval-term (env (term sy-slot-set))
+  (let ((res (env:lookup (slot term) env)))
+    (if (typep res 'viv-slot)
+        (mdo 
+         (bind value (eval-term env (val term)))
+         (progn
+           (setf (gethash (name res) (slots (object res))) value)
+           (pure viv-base::+null-values+)))
+        (error "must set a slot; setting: ..."))))
 
 
 

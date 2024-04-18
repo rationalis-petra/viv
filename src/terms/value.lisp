@@ -52,6 +52,39 @@
     :initarg :fun
     :documentation "The function to invoke")))
 
+;; Imperative and Object oriented programming
+(defclass viv-slot (viv-value)
+  ((object
+    :initarg :object
+    :accessor object)
+   (name
+    :initarg :name
+    :accessor name)))
+
+(defclass viv-object (viv-value)
+  ((name
+    :accessor name
+    :initarg :name)
+   (slots
+    :accessor slots
+    :initarg :slots)
+   (messages
+    :accessor messages
+    :initarg :messages))
+  (:documentation "An object hides all its internal state (slots), and can only
+  be interacted with via message sends, each of which synchronously 'locks' the
+  object until completion."))
+
+(defclass viv-actor (viv-value)
+  ((slots
+    :accessor slots
+    :initarg :slots)
+   (messages
+    :accessor messages
+    :initarg :messages))
+   (:documentation "An actor hides all its internal state (slots), and can only
+  be interacted with via messages, which are send and processed asynchronously (concurrently)."))
+
 
 ;; Logic programming
 (defclass viv-lvar (viv-value)
@@ -117,10 +150,6 @@
     :accessor field
     :initarg :field)))
 
-(defclass viv-ref (viv-value)
-  ((element
-    :accessor element
-    :initarg :element)))
 
 (defclass viv-macro (viv-value)
   ((body
@@ -183,15 +212,30 @@
 
 ;; Printing
 
+(defmethod print-object ((value viv-former) stream)
+  (if *print-repr*
+      (print-object (former value) stream)
+      (format stream "#f~A" (former value))))
+
 (defmethod print-object ((value viv-num) stream)
-  (format stream "#n~A" (num value)))
+  (if *print-repr*
+      (print-object (num value) stream)
+      (format stream "#n~A" (num value))))
 
 (defmethod print-object ((value viv-symbol) stream)
-  (format stream "#s~A" (m-symbol value)))
+  (if *print-repr*
+      (print-object (m-symbol value) stream)
+      (format stream "#s~A" (m-symbol value))))
+
+(defmethod print-object ((value viv-string) stream)
+  (if *print-repr*
+      (format stream "\"~a\"" (str value))
+      (format stream "#s\"~a\"" (str value))))
 
 (defmethod print-object ((value viv-ival) stream)
-  (write-string "#i(" stream)
-  (print-object (name value) stream)
-  (loop for elt in (vals value)
-        do (print-object elt stream))
-  (write-string ")" stream))
+  (if *print-repr*
+      (format stream "(:~a ~{~a~^ ~})" (name value) (vals value))
+      (format stream "(#i :~a ~{~a~^ ~})" (name value) (vals value))))
+
+
+

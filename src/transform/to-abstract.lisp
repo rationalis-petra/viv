@@ -60,15 +60,58 @@
            (body (to-abstract env (sub-expr (subseq args 1)))))
        (make-instance 'sy-def :var symbol :body body)))
 
-    (:seq
-     (make-instance 'sy-seq
-                    :terms (mapcar (lambda (e) (to-abstract env e)) args)))
-
     ;; meta
     (:macro
      (make-instance 'sy-macro :body (to-abstract env (sub-expr args))))
     (:quote
      (make-instance 'sy-literal :value (concrete->val (sub-expr args))))
+
+    ;; imperative
+    (:seq
+     (make-instance 'sy-seq
+                    :terms (mapcar (lambda (e) (to-abstract env e)) args)))
+    (:object
+     (let* ((recsym (when (typep (contents (elt args 0)) 'keyword)
+                      (contents (elt args 0))))
+            (slots (mapcar (lambda (elt)
+                                    (destructuring-bind (sym body) (get-symval-pair elt)
+                                      (cons sym (to-abstract env body))))
+                                  (contents (elt args (if recsym 1 0)))))
+            (raw-clauses (subseq args (if recsym 2 1)))
+            (new-env (env:shadow-vars (append (when recsym (list recsym))
+                                              (mapcar #'car slots))
+                                      env)))
+       (make-instance
+        'sy-object
+        :synchrony :synchronous
+        :name recsym
+        :slots slots
+        :clauses (mapcar (lambda (c) (to-coclause new-env c)) raw-clauses))))
+
+    (:actor
+     (let* ((recsym (when (typep (contents (elt args 0)) 'keyword)
+                      (contents (elt args 0))))
+            (slots (mapcar (lambda (elt)
+                                    (destructuring-bind (sym body) (get-symval-pair elt)
+                                      (cons sym (to-abstract env body))))
+                                  (contents (elt args (if recsym 1 0)))))
+            (raw-clauses (subseq args (if recsym 2 1)))
+            (new-env (env:shadow-vars (append (when recsym (list recsym))
+                                              (mapcar #'car slots))
+                     env)))
+       (make-instance
+        'sy-object
+        :synchrony :asynchronous
+        :name recsym
+        :slots slots
+        :clauses (mapcar (lambda (c) (to-coclause new-env c)) raw-clauses))))
+
+    (:slot-set
+     (let* ((name (get-symbol (elt args 0)))
+            (value (to-abstract env (elt args 1))))
+       (make-instance 'sy-slot-set
+                      :slot name
+                      :val value)))
 
     ;; logic
     (:predicate
@@ -97,6 +140,7 @@
             (goal (to-abstract env (elt args 1))))
        (make-instance 'sy-query :vars vars :goal goal)))
 
+
     ;; functional
     (:function
      (assert (> (length args) 1))
@@ -104,6 +148,8 @@
        (make-instance 'sy-function :args symlist
                                    :body (to-abstract (env:shadow-vars symlist env) (sub-expr (subseq args 1))))))
 
+
+    ;; 
     (:shift
      (assert (> (length args) 1))
      (let ((symbol (get-symbol (elt args 0))))
@@ -114,6 +160,7 @@
      (assert (= (length args) 1))
      (make-instance 'sy-reset :body (to-abstract env (first args))))
 
+    ;; Data values
     (:structure
      (make-instance
       'sy-structure
@@ -194,7 +241,7 @@
                                         :name (name atom)
                                         :subpatterns nil))
                ;; TODO: what if ;; matching ival has values?
-               (t (error "expecting symbol or in pat-atom!"))))
+               (t (error "expecting symbol or ival in pat-atom!"))))
 
            (pat-node (nodes)
              (let ((head (car nodes))
@@ -228,8 +275,6 @@
       (make-instance 'sy-copattern
                      :name (get-copattern-head head)
                      :subpatterns rest))))
-
-
 
 ;;------------------------------------------------------------------------------
 ;; Logic Syntax
@@ -285,6 +330,7 @@
          (patterns (to-copattern env (subseq (contents raw) 0 idx)))
          (new-env (env:shadow-vars (copattern-vars patterns) env)))
     (cons patterns (to-abstract new-env (sub-expr (subseq (contents raw) (+ idx 1)))))))
+
 
 (declaim (ftype (function (list) concrete)))
 (defun sub-expr (args)

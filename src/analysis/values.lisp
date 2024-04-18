@@ -9,3 +9,4 @@
        (if symbol 
            (eq symbol (name value))
            t)))
+

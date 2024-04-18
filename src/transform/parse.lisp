@@ -23,10 +23,11 @@
         stream
         (lambda (next)
           (make-instance 'viv-ival :name (contents next)))))
-      ((char= head #\.)
+      ((char= head #\;)
        (parse-symbolic
         stream
         (lambda (next) (make-instance 'viv-destructor :field (contents next))))) 
+      ;; TODO: infix '.'
       ((char= head #\!)
        (read-char t stream)
        (make-instance 'concrete-node

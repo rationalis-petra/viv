@@ -11,3 +11,9 @@
 (defmacro ->> (val &rest terms)
   (reduce (lambda (val lst) (append lst (list val))) terms
           :initial-value val))
+
+(defun alist->table (alist)
+  (loop with out = (make-hash-table)
+        for cell in alist
+        do (setf (gethash (car cell) out) (cdr cell))
+        finally (return out)))

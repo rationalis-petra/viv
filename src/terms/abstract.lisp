@@ -29,10 +29,34 @@
     :accessor value)))
 (defun make-lit (val) (make-instance 'sy-literal :value val))
 
+
+;; Imperative Statements
 (defclass sy-seq (viv-syntax)
   ((terms
     :initarg :terms
     :accessor terms)))
+
+(defclass sy-object (viv-syntax)
+  ((synchrony
+    :initarg :synchrony
+    :accessor synchrony)
+   (name
+    :initarg :name
+    :accessor name)
+   (slots
+    :initarg :slots
+    :accessor slots)
+   (clauses
+    :initarg :clauses
+    :accessor clauses)))
+
+(defclass sy-slot-set (viv-syntax)
+  ((slot
+    :initarg :slot
+    :accessor slot)
+   (val
+    :initarg :val
+    :accessor val)))
 
 ;; Expresssions
 (defclass sy-function (viv-syntax)

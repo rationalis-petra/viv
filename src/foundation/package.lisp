@@ -6,6 +6,7 @@
    :->
    :->>
    :id
+   :alist->table
 
    ;; sequecne
    :group-by
