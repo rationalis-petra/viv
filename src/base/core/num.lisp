@@ -4,25 +4,17 @@
 
 (defun make-num (n) (make-instance 'viv:viv-num :num n))
 
-(defvar *builtin-plus*
-  (make-instance 'primop
-                 :arity 2
-                 :fun (lambda (x y) (pure (make-num (+ (viv:num x) (viv:num y)))))))
+(defun builtin-plus (x y)
+  (pure (make-num (+ (viv:num x) (viv:num y)))))
 
-(defvar *builtin-minus*
-  (make-instance 'primop
-                 :arity 2
-                 :fun (lambda (x y) (pure (make-num (- (viv:num x) (viv:num y)))))))
+(defun builtin-minus (x y)
+  (pure (make-num (- (viv:num x) (viv:num y)))))
 
-(defvar *builtin-multiply*
-  (make-instance 'primop
-                 :arity 2
-                 :fun (lambda (x y) (pure (make-num (* (viv:num x) (viv:num y)))))))
+(defun builtin-multiply (x y)
+  (pure (make-num (* (viv:num x) (viv:num y)))))
 
-(defvar *builtin-divide*
-  (make-instance 'primop
-                 :arity 2
-                 :fun (lambda (x y) (pure (make-num (/ (viv:num x) (viv:num y)))))))
+(defun builtin-divide (x y)
+  (pure (make-num (/ (viv:num x) (viv:num y)))))
 
 
 (defun make-num-module ()
@@ -31,8 +23,8 @@
                                     :name "num"
                                     :fields num-entries)))
 
-    (setf (gethash :|+| num-entries) *builtin-plus*)
-    (setf (gethash :|-| num-entries) *builtin-minus*)
-    (setf (gethash :|÷| num-entries) *builtin-divide*)
-    (setf (gethash :|*| num-entries) *builtin-multiply*)
+    (setf (gethash :|+| num-entries) (builtin #'builtin-plus 2))
+    (setf (gethash :|-| num-entries) (builtin #'builtin-minus 2))
+    (setf (gethash :|/| num-entries) (builtin #'builtin-divide 2))
+    (setf (gethash :|*| num-entries) (builtin #'builtin-multiply 2))
     num-module))

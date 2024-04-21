@@ -42,6 +42,11 @@
     :accessor str
     :initarg :str)))
 
+(defclass viv-foreign (viv-value)
+  ((value
+    :accessor value
+    :initarg :value)))
+
 (defclass primop (viv-value)
   ((arity
     :accessor arity
@@ -53,6 +58,14 @@
     :documentation "The function to invoke")))
 
 ;; Imperative and Object oriented programming
+(defclass viv-label (viv-value)
+  ((lisp-label
+    :initarg :lisp-label
+    :accessor lisp-label)
+   (name
+    :initarg :name
+    :accessor name)))
+
 (defclass viv-slot (viv-value)
   ((object
     :initarg :object
@@ -237,5 +250,7 @@
       (format stream "(:~a ~{~a~^ ~})" (name value) (vals value))
       (format stream "(#i :~a ~{~a~^ ~})" (name value) (vals value))))
 
-
-
+(defmethod print-object ((value viv-values) stream)
+  (if *print-repr*
+      (format stream "[~{~a~^ ~}]" (m-values value))
+      (format stream "(#v ~{~a~^ ~})" (m-values value))))

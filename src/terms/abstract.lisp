@@ -36,6 +36,14 @@
     :initarg :terms
     :accessor terms)))
 
+(defclass sy-with-jumps (viv-syntax)
+  ((body
+    :initarg :body
+    :accessor body)
+   (jump-locations
+    :initarg :jump-locations
+    :accessor jump-locations)))
+
 (defclass sy-object (viv-syntax)
   ((synchrony
     :initarg :synchrony

@@ -1,5 +1,5 @@
 (defpackage :viv-base
-  (:use :viv :foundation :cl)
+  (:use :viv :foundation :cl :named-readtables)
   (:export
    :make-base
    :builtin-exit))
@@ -14,3 +14,7 @@
 (defun builtin (fn n) (make-instance 'viv:primop :fun fn :arity n))
 
 (defun mk-former (former) (make-instance 'viv:viv-former :former former))
+
+;(defreadtable  )
+
+(sdl2:init :video)

@@ -11,7 +11,7 @@
   ;; :build-pathname "wbc.exe"
   ;; :entry-point #'cl-user::main ;main
   ;;:depends-on (:iup)
-  :depends-on (:bordeaux-threads :trivia :sdl2)
+  :depends-on (:bordeaux-threads :trivia :sdl2 :named-readtables)
   :pathname "src"
   :components
   ((:file "package" :depends-on (foundation))
@@ -32,6 +32,12 @@
     :components
     ((:file "base" :depends-on (core system))
      (:module
+      abs
+      :pathname "abs"
+      :depends-on ("package")
+      :components
+      ((:file "abs")))
+     (:module
       core
       :pathname "core"
       :depends-on ("package")
@@ -40,13 +46,16 @@
        (:file "lang")
        (:file "reflect")
        (:file "num")))
+
      (:module
       system
       :pathname "system"
       :depends-on ("package")
       :components
-      ((:file "system" :depends-on ("console"))
+      ((:file "system" :depends-on ("console" "display"))
+       (:file "display")
        (:file "console")))
+
 
      (:file "package")))
 

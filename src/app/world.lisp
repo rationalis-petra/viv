@@ -19,11 +19,10 @@
          (user-modules (make-hash-table))
          (user-package (make-instance 'viv-package
                                       :name "viv-user"
+                                      :exports '(:|core| :|system| :|abs|)
                                       :prelude '((:|base| :|core| :|lang|)
                                                  (:|base| :|core| :|reflect|)
-                                                 (:|base| :|core| :|num|)
-
-                                                 (:|base| :|system|))
+                                                 (:|base| :|core| :|num|))
                                       :dependencies '(:|base|)
                                       :modules user-modules))
          (user-module (make-instance 'viv-module

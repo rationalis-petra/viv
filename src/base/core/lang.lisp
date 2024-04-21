@@ -41,7 +41,11 @@
     (setf (gethash :|app| lang-entries) (mk-former :app))
 
     ;; imperative
-    (setf (gethash :|seq| lang-entries) (mk-former :seq))
+    (setf (gethash :|with-jumps| lang-entries) (mk-former :with-jumps))
+    (setf (gethash :|do-jump| lang-entries) (mk-former :do-jump))
+    (setf (gethash :|seq| lang-entries) (mk-former :seq)) ;; TODO: make into macro
+    ;; TODO: Loop Macro
+    ;; TODO: (block lbl e1) → (with-jumps e1 (lbl))
 
     (setf (gethash :|object| lang-entries) (mk-former :object))
     (setf (gethash :|actor| lang-entries) (mk-former :actor))

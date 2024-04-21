@@ -196,13 +196,31 @@
 ;; Convert a symbol to a path based on current module/package 
 (declaim (ftype (function (viv:world keyword list) hash-table) calc-prelude-map))
 (defun calc-path-map (world package-name module-name)
+  "Given a module designated by MODULE-NAME in PACKAGE-NAME, get the map of
+symbols to (full) paths which would be denoted by that module (combine the
+module definitions witht the package prelude"
+
   (let* ((path-map (calc-prelude-map world package-name))
          (package (gethash package-name (packages world)))
          (module (lookup-package-path module-name package)))
+
+    ;; Insert the available (top-level) modules from this package into scope.
+    (loop
+      for module-name being each hash-key of (modules package)
+      do (setf (gethash module-name path-map) (list package-name module-name)))
+
+    ;; Insert top-level modules from imported packages into scope.
+    (loop
+      for package-name in (viv::dependencies package)
+      do (loop for module-name in (viv::exports package)
+               do (setf (gethash module-name path-map) (list package-name module-name))))
+
+    ;; Insert the definitions from the MODULE-NAME into the path 
     (loop
       with prefix = (cons package-name module-name)
       for key being each hash-key of (fields module)
-          do (setf (gethash key path-map) (append prefix (list key))))
+      do (setf (gethash key path-map) (append prefix (list key))))
+
     path-map))
 
 (declaim (ftype (function (viv:world keyword) hash-table) calc-prelude-map))

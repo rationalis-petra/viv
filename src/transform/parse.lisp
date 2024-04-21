@@ -27,6 +27,10 @@
        (parse-symbolic
         stream
         (lambda (next) (make-instance 'viv-destructor :field (contents next))))) 
+      ((char= head #\.)
+       (parse-symbolic
+        stream
+        (lambda (next) (make-instance 'viv-projector :field (contents next)))))
       ;; TODO: infix '.'
       ((char= head #\!)
        (read-char t stream)

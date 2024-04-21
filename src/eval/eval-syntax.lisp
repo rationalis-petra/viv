@@ -84,7 +84,7 @@
             (make-instance 'viv-ival :name (name callee) :vals (append args (vals callee))))))
      (viv-projector
       (assert (= (length (args term)) 1))
-      (mdo (bind val (mapM (lambda (e) (eval-term env e)) (car (args term))))
+      (mdo (bind val (eval-term env (car (args term))))
            (pure
             (progn
               (assert (typep val 'viv-struct))
@@ -215,6 +215,7 @@
           (progn
             (setf (messages self) out-map)
             (return (pure self)))))))
+
 (defmethod eval-term (env (term sy-slot-set))
   (let ((res (env:lookup (slot term) env)))
     (if (typep res 'viv-slot)
@@ -225,48 +226,10 @@
            (pure viv-base::+null-values+)))
         (error "must set a slot; setting: ..."))))
 
-
-
 (defmethod eval-term (env (term sy-constructor))
   (mdo
    (bind vals (mapM (lambda (val) (eval-term env val)) (args term)))
    (pure (make-instance 'viv-ival :name (name term) :vals vals))))
-
-(declaim (ftype (function (sy-pattern t) t) match-pattern))
-(defun match-pattern (pattern val)
-  (typecase pattern
-    (pattern-any
-     (list (cons (var pattern) val)))
-    (pattern-ival
-     (if (and (eq (name pattern) (name val))
-              (= (length (subpatterns pattern))
-                 (length (vals val))))
-         (let ((submatches (mapcar #'match-pattern (subpatterns pattern) (vals val))))
-           (if (every (lambda (x) (not (eq x :false))) submatches)
-               (apply #'append submatches)
-               :false))
-         :false))
-    (t (error (format nil "bad-pattern: ~A~%" pattern)))))
-
-(defun try-match (coclause args)
-  (let* ((pattern (car clause))
-         (binds (mapcar #'match-pattern pattern args)))
-    (when (every (lambda (x) (not (eq x :false))) binds)
-      (cons (reduce #'append  binds) (cdr clause)))))
-
-(defun try-comatch (clause args)
-  (assert (= (length args) (length (subpatterns (car clause)))))
-  (let* ((pattern (car clause))
-         (binds (mapcar #'match-pattern (subpatterns pattern) args)))
-    (when (every (lambda (x) (not (eq x :false))) binds)
-      (cons (reduce #'append  binds) (cdr clause)))))
-
-(defun get-match-term (args clauses)
-  (or 
-   (loop for clause in clauses
-         do (let ((res (try-match clause args)))
-              (when res (return res))))
-   (error "match failed!")))
                           
 
 (defmethod eval-term (env (term sy-recursor))
@@ -353,10 +316,55 @@
   (let* ((next (run-query env (vars term) (goal term))))
     (pure next)))
 
-;; Unification
+
+;;------------------------------------------------------------------------------
+;;   Pattern Matching Utilities. 
+;;------------------------------------------------------------------------------
+
+(declaim (ftype (function (sy-pattern t) t) match-pattern))
+(defun match-pattern (pattern val)
+  (typecase pattern
+    (pattern-any
+     (list (cons (var pattern) val)))
+    (pattern-ival
+     (if (and (eq (name pattern) (name val))
+              (= (length (subpatterns pattern))
+                 (length (vals val))))
+         (let ((submatches (mapcar #'match-pattern (subpatterns pattern) (vals val))))
+           (if (every (lambda (x) (not (eq x :false))) submatches)
+               (apply #'append submatches)
+               :false))
+         :false))
+    (t (error (format nil "bad-pattern: ~A~%" pattern)))))
+
+(defun try-match (coclause args)
+  (let* ((pattern (car clause))
+         (binds (mapcar #'match-pattern pattern args)))
+    (when (every (lambda (x) (not (eq x :false))) binds)
+      (cons (reduce #'append  binds) (cdr clause)))))
+
+(declaim (ftype (function (list list) cons) try-comatch))
+(defun try-comatch (clause args)
+  (assert (= (length args) (length (subpatterns (car clause)))))
+  (let* ((pattern (car clause))
+         (binds (mapcar #'match-pattern (subpatterns pattern) args)))
+    (when (every (lambda (x) (not (eq x :false))) binds)
+      (cons (reduce #'append  binds) (cdr clause)))))
+
+(defun get-match-term (args clauses)
+  (or 
+   (loop for clause in clauses
+         do (let ((res (try-match clause args)))
+              (when res (return res))))
+   (error "match failed!")))
+
+
+;;------------------------------------------------------------------------------
+;;   Unification. 
+;;------------------------------------------------------------------------------
+
 ;; Queries run as follows:
 ;(defun run-query (vars head))
-
 
 
 ;; The unification algorithm
