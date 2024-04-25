@@ -28,8 +28,18 @@
     :accessor inner
     :initarg :inner)))
 
+(defclass monad-with-jumps (monad)
+  ((body
+    :accessor body
+    :initarg :body)
+   (targets
+    :accessor targets
+    :initarg :targets)))
 
-
+(defclass monad-jump-to (monad)
+  ((target
+    :accessor target
+    :initarg :target)))
 
 (defgeneric run (monad)
   (:documentation "Generic function which runs the delimited continuation
@@ -41,6 +51,8 @@
 (defmethod run ((bind monad-bind))
   (let ((result (run (monad bind))))
     (case (first result)
+      ;; No delimited continuation; continue 
+      (:value (run (funcall (fun bind) (elt result 1))))
       ;; delimited continuation
       ;; built up a new continuation
       (:delcont
@@ -51,23 +63,55 @@
           (make-instance 'monad-bind 
                          :monad (funcall (elt result 2) v)
                          :fun (fun bind)))))
-      ;; No delimited continuation; continue 
-      (:value (run (funcall (fun bind) (elt result 1)))))))
+      ;; goto tag - keep unwinding stack
+      (:go result))))
 
 (defmethod run ((shift monad-shift))
   (list :delcont (fun shift) (lambda (v) (make-instance 'monad-pure :val v))))
 
 (defmethod run ((reset monad-reset))
-  (let ((result (run (inner reset))))
-    (case (first result)
-      (:delcont (run (funcall (elt result 1) (elt result 2))))
-      (:value result))))
+  (match (run (inner reset))
+    ((list :value val) (list :value val))
+    ((list :delcont fun cont) (funcall fun cont))
+    ((list :go set tag) (list :go set tag))))
 
 
+;; With-jumps : initial-body
+;;              targets → take jump functions, return monad
+;;              
+(defmethod run ((with-jumps monad-with-jumps))
+  (let* ((jump-id (gensym "jump-stack-marker"))
+         (jumps (mapcar
+                 (lambda (idx)
+                   (make-instance 'monad-jump-to :target (list :go jump-id idx)))
+                 (iota (length (targets with-jumps)))))
+         (targets (mapcar (lambda (target) (funcall target jumps)) (targets with-jumps)))
+         (current-monad (funcall (body with-jumps) jumps)))
+
+    ;; Loop while there is a body to run
+    (loop while current-monad 
+          do (match (run current-monad)
+               ((list :delcont fun cont)
+                (return (list :delcont fun
+                              (lambda (v)
+                                (make-instance 'monad-with-jumps
+                                               :body (funcall cont v)
+                                               :targets (targets with-jumps))))))
+               ((list :value val)
+                (return (list :value val)))
+               ((list :go set tag)
+                (if (eq set jump-id)
+                    (setf current-monad (elt targets tag))
+                    (return (list :go set tag))))))))
+
+(defmethod run ((jump-to monad-jump-to))
+  (target jump-to))
 
 (defun mreset (inner) (make-instance 'monad-reset :inner inner))
 (defun mshift (fun) (make-instance 'monad-shift :fun fun))
 (defun bind (monad fun) (make-instance 'monad-bind :monad monad :fun fun))
+(defun mwith-jumps (body jumps)
+  (make-instance 'monad-with-jumps :body body :targets jumps))
 
 (declaim (ftype (function (monad monad) monad) seq))
 (defun seq  (m1 m2)

@@ -58,13 +58,10 @@
     :documentation "The function to invoke")))
 
 ;; Imperative and Object oriented programming
-(defclass viv-label (viv-value)
-  ((lisp-label
-    :initarg :lisp-label
-    :accessor lisp-label)
-   (name
-    :initarg :name
-    :accessor name)))
+(defclass viv-jump-target (viv-value)
+  ((monad
+    :initarg :monad
+    :accessor monad)))
 
 (defclass viv-slot (viv-value)
   ((object

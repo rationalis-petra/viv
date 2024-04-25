@@ -44,11 +44,39 @@
      (add-def (var term) val (env:env-world env) (env:env-package env) (env:env-module env))
      (pure val))))
 
+;; Imperative
 (defmethod eval-term (env (term sy-seq))
   (mdo
    (bind terms (mapM (lambda (term) (eval-term env term)) (terms term)))
    (pure (car (last terms)))))
 
+(defmethod eval-term (env (term sy-with-jumps))
+  (flet ((springboard (to-spring)
+           (lambda (jumps)
+             ;; 1. for each jump in jumps, wrap in viv value
+             (let* ((viv-jumps (mapcar (lambda (jump)
+                                         (make-instance 'viv-jump-target
+                                                        :monad jump))
+                                       jumps))
+
+                    ;; 2. Generate an alist of sym . jump pairs 
+                    (binds (mapcar (lambda
+                                       (target jump)
+                                     (cons (car target) jump))
+                                   (jump-locations term)
+                                   viv-jumps)))
+             (eval-term (env:insert-many binds env) to-spring)))))
+      (mwith-jumps
+       (springboard (body term))
+       (mapcar (lambda (v) (springboard (cdr v))) (jump-locations term)))))
+
+(defmethod eval-term (env (term sy-jump-to))
+  (mdo
+   (bind jump-target (eval-term env (target term)))
+   (pure (assert (typep jump-target 'viv-jump-target)))
+   (monad jump-target)))
+
+;; Functional
 (defmethod eval-term (env (term sy-function))
   (pure (make-instance 'viv-fun
                        :arity (length (args term))
@@ -68,8 +96,7 @@
    (typecase callee
      ((or primop viv-fun)
       (unless (= (length (args term)) (arity callee))
-        (error 'bad-arity
-               :expected-arity (arity callee)
+        (error 'bad-arity :expected-arity (arity callee)
                :actual-arity (length (args term))
                :value callee))
       (mdo (bind args (mapM (lambda (e) (eval-term env e)) (args term)))

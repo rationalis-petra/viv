@@ -44,6 +44,11 @@
     :initarg :jump-locations
     :accessor jump-locations)))
 
+(defclass sy-jump-to (viv-syntax)
+  ((target
+    :initarg :target
+    :accessor target)))
+
 (defclass sy-object (viv-syntax)
   ((synchrony
     :initarg :synchrony

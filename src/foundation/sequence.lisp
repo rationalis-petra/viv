@@ -31,14 +31,6 @@ eg: (group-by '((a 1 2) (a 3 4) (b 5 6)))
     finally (return results)))
 
 
-;; (iter (for i in list)
-;;     (for k = (funcall key i))
-;;     (for v = (cons (funcall value i) nil))
-;;     (for cell = (assoc k tails :test test :key key-fn))
-;;     (cond
-;;       (cell (setf (cddr cell) v
-;;                   (cdr cell) v))
-;;       (t               ;; dont reuse this cons cell, we want two distinct ones
-;;        (collect (cons k v) into results)
-;;        (collect (cons k v) into tails)))
-;;     (finally (return results)))
+(defun iota (end)
+  (loop for i from 0 to (- end 1)
+        collect i))

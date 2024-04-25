@@ -70,6 +70,20 @@
     (:seq
      (make-instance 'sy-seq
                     :terms (mapcar (lambda (e) (to-abstract env e)) args)))
+    (:with-jumps
+        (assert (< 0 (length args)))
+      (let* ((raw-locs (mapcar #'get-sym-body (cdr args)))
+             (new-env (env:shadow-vars (mapcar #'car raw-locs) env))
+             (locs (mapcar (lambda (elt)
+                             (cons (car elt) (to-abstract new-env (sub-expr (cdr elt)))))
+                           raw-locs)))
+        (make-instance 'sy-with-jumps
+                       :body (to-abstract new-env (elt args 0))
+                       :jump-locations locs)))
+    (:jump-to
+     (assert (= 1 (length args)))
+     (make-instance 'sy-jump-to :target (to-abstract env (elt args 0))))
+
     (:object
      (let* ((recsym (when (typep (contents (elt args 0)) 'keyword)
                       (contents (elt args 0))))

@@ -10,16 +10,16 @@ Viv is based on a single (dumb) idea: What if we tried to cram basically
 everything into one langauge? Currently, I'm working on implementing:
 + Functional Programming
 + Imperative Programming
-+ Object-Orented 
++ Object-Oriented Programming
 + Concatenative Programming 
 + Logic Programming
 + Actor Based Concurrency 
 + Metaprogramming
 
 Currently in planning are:
-+ Hardware Programming (maybe)
-+ Type system (Dependent)
-+ Systems programming features (opt-in manual memory managment)
++ Dependent Type System
++ Hardware Language (Maybe)
++ Systems Programming features (opt-in manual memory managment)
 
 ## Some Snippets
 

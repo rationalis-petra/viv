@@ -63,6 +63,13 @@
     (error "Term list element must contain symbol as first pair"))
   (list (contents (elt (contents terms) 0)) (elt (contents terms) 1)))
 
+(defun get-sym-body (terms)
+  (assert (typep terms 'concrete-node))
+  (assert (typep (contents terms) 'cons ))
+  (unless (typep (contents (car (contents terms))) 'keyword)
+    (error "Term list element must contain symbol as first pair"))
+  (cons (contents (car (contents terms))) (cdr (contents terms))))
+
 (defun get-list (expr)
   (unless (typep expr 'concrete-node)
     (error "Symbol list require to be list"))

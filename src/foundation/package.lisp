@@ -1,6 +1,6 @@
 (defpackage foundation
   (:nicknames :fd)
-  (:use :cl)
+  (:use :cl :trivia)
   (:export
    ;; function
    :->
@@ -10,6 +10,7 @@
 
    ;; sequecne
    :group-by
+   :iota
 
    ;; agent 
    :system
@@ -25,6 +26,7 @@
    :run
    :mreset
    :mshift
+   :mwith-jumps
    :bind
    :seq
    :pure
