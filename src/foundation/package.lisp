@@ -7,10 +7,16 @@
    :->>
    :id
    :alist->table
+   ;lazy
+   :freeze
+   :thaw
 
    ;; sequecne
    :group-by
    :iota
+   :maptable
+   :make-ht
+   :alist->ht
 
    ;; agent 
    :system

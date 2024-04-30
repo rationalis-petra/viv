@@ -10,6 +10,7 @@
    :viv-module
    :viv-former
    :viv-values
+   :viv-macro
 
    :*print-repr*
 
@@ -31,3 +32,4 @@
 
 (defvar *current-world*) 
 (defvar *print-repr* nil)
+

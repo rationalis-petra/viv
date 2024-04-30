@@ -13,6 +13,7 @@
 
 (defun builtin (fn n) (make-instance 'viv:primop :fun fn :arity n))
 
+(defun mk-macro (v-function) (make-instance 'viv:viv-macro :body v-function))
 (defun mk-former (former) (make-instance 'viv:viv-former :former former))
 
 ;(defreadtable  )

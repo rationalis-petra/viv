@@ -1,5 +1,7 @@
 (in-package :viv)
 
+(named-readtables:in-readtable :fn.reader)
+
 (define-condition bad-sort (error)
   ((expected-sort
     :initarg :expected-sort
@@ -47,16 +49,14 @@
 ;; Imperative
 (defmethod eval-term (env (term sy-seq))
   (mdo
-   (bind terms (mapM (lambda (term) (eval-term env term)) (terms term)))
+   (bind terms (mapM λ(eval-term env _) (terms term)))
    (pure (car (last terms)))))
 
 (defmethod eval-term (env (term sy-with-jumps))
   (flet ((springboard (to-spring)
            (lambda (jumps)
              ;; 1. for each jump in jumps, wrap in viv value
-             (let* ((viv-jumps (mapcar (lambda (jump)
-                                         (make-instance 'viv-jump-target
-                                                        :monad jump))
+             (let* ((viv-jumps (mapcar λ(make-instance 'viv-jump-target :monad _)
                                        jumps))
 
                     ;; 2. Generate an alist of sym . jump pairs 
@@ -68,7 +68,7 @@
              (eval-term (env:insert-many binds env) to-spring)))))
       (mwith-jumps
        (springboard (body term))
-       (mapcar (lambda (v) (springboard (cdr v))) (jump-locations term)))))
+       (mapcar λ(springboard (cdr _)) (jump-locations term)))))
 
 (defmethod eval-term (env (term sy-jump-to))
   (mdo
@@ -99,14 +99,14 @@
         (error 'bad-arity :expected-arity (arity callee)
                :actual-arity (length (args term))
                :value callee))
-      (mdo (bind args (mapM (lambda (e) (eval-term env e)) (args term)))
+      (mdo (bind args (mapM λ(eval-term env _) (args term)))
            (apply (fun callee) args)))
      (viv-stackfun
-      (mdo (bind args (mapM (lambda (e) (eval-term env e)) (args term)))
+      (mdo (bind args (mapM λ(eval-term env _) (args term)))
            (bind final-stack (stack-run (env callee) (program callee) args))
            (pure (to-values final-stack))))
      (viv-ival
-      (mdo (bind args (mapM (lambda (e) (eval-term env e)) (args term)))
+      (mdo (bind args (mapM λ(eval-term env _) (args term)))
            (pure
             (make-instance 'viv-ival :name (name callee) :vals (append args (vals callee))))))
      (viv-projector
@@ -118,7 +118,7 @@
               (gethash (field callee) (fields val))))))
      (viv-destructor
       (mdo (bind val (eval-term env (car (args term))))
-           (bind args (mapM (lambda (v) (eval-term env v)) (cdr (args term))))
+           (bind args (mapM λ(eval-term env _) (cdr (args term))))
            (typecase val
              (viv-coval
               (assert (null args))
@@ -173,7 +173,7 @@
                                env)
               (cdr match-res))))
     (mdo 
-     (bind vals (mapM (lambda (v) (eval-term env v)) (vals term)))
+     (bind vals (mapM λ(eval-term env _) (vals term)))
      (loop
        with out-map = (make-hash-table)
        for clause-set in (group-by (clauses term)
@@ -364,7 +364,7 @@
          :false))
     (t (error (format nil "bad-pattern: ~A~%" pattern)))))
 
-(defun try-match (coclause args)
+(defun try-match (clause args)
   (let* ((pattern (car clause))
          (binds (mapcar #'match-pattern pattern args)))
     (when (every (lambda (x) (not (eq x :false))) binds)
@@ -384,28 +384,5 @@
          do (let ((res (try-match clause args)))
               (when res (return res))))
    (error "match failed!")))
-
-
-;;------------------------------------------------------------------------------
-;;   Unification. 
-;;------------------------------------------------------------------------------
-
-;; Queries run as follows:
-;(defun run-query (vars head))
-
-
-;; The unification algorithm
-(declaim (ftype (function (env:dynamic-env viv-value viv-value) list) unify))
-(defun unify (env v1 v2)
-  (typecase v1
-    (viv-ivar
-     (occurs-check v1 v2)
-     (list (cons (name v1) v2)) ;; assoc-list
-
-     
-     )))
-
-(defun occurs-check (l r)
-  (declare (ignore l r)))
 
 

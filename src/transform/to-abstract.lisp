@@ -43,9 +43,7 @@
   (let ((comptime-val (get-comptime env (car elements))))
     (typecase comptime-val
       (viv-former (form-expr env comptime-val (cdr elements)))
-      (viv-macro (macro-expand env comptime-val
-                               (make-instance 'concrete-node :type :expr
-                                                             :contents (cdr elements))))
+      (viv-macro (macro-expand env comptime-val :expr (cdr elements)))
       (t 
        (make-instance 'sy-apply :fun (to-abstract env (car elements))
                                 :args (mapcar (lambda (e) (to-abstract env e))
@@ -228,8 +226,8 @@
 
     (t (error "unrecognized former!"))))
 
-(declaim (ftype (function (env:macro-env viv-macro concrete) viv-syntax) macro-expand)) 
-(defun macro-expand (env macro concrete)
+(declaim (ftype (function (env:macro-env viv-macro keyword list) viv-syntax) macro-expand)) 
+(defun macro-expand (env macro tipe arglist)
   (to-abstract
    env
    (val->concrete
@@ -237,7 +235,9 @@
     (run (eval-term (env:macro->dynamic env)
                     (make-instance 'sy-apply
                                    :fun (make-instance 'sy-literal :value (body macro))
-                                   :args (list (make-instance 'sy-literal :value (concrete->val concrete))))))))))
+                                   :args (list
+                                          (make-instance 'sy-literal :value (make-instance 'viv-ival :name tipe :vals nil))
+                                          (make-instance 'sy-literal :value (list->val arglist #'concrete->val))))))))))
 
 (defun to-patterns (env pat)
   (labels ((rec (term)

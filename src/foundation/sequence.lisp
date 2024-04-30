@@ -34,3 +34,23 @@ eg: (group-by '((a 1 2) (a 3 4) (b 5 6)))
 (defun iota (end)
   (loop for i from 0 to (- end 1)
         collect i))
+
+(defun maptable (fun table)
+  (loop with out-table = (make-hash-table)
+        for key being each hash-key in table
+        do (setf key (funcall fun (gethash key out-table)))))
+
+(defun alist->ht (alist)
+  (loop
+    with table = (make-hash-table) 
+    for pair in alist
+    do (setf (gethash (car pair) table) (cdr pair))
+    finally (return table)))
+
+(defmacro make-ht (&rest key-val-pairs)
+  (let ((table-name (gensym "table")))
+    `(let ((,table-name (make-hash-table)))
+       ,@(loop for pair in key-val-pairs    
+               collect `(setf (gethash ,(car pair) ,table-name) ,(cdr pair)))
+       ,table-name)))
+

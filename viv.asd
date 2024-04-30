@@ -11,7 +11,7 @@
   ;; :build-pathname "wbc.exe"
   ;; :entry-point #'cl-user::main ;main
   ;;:depends-on (:iup)
-  :depends-on (:bordeaux-threads :trivia :sdl2 :named-readtables)
+  :depends-on (:bordeaux-threads :trivia :sdl2 :named-readtables :fn)
   :pathname "src"
   :components
   ((:file "package" :depends-on (foundation))
@@ -63,7 +63,9 @@
     eval
     :pathname "eval"
     :depends-on (foundation terms binding)
-    :components ((:file "eval-syntax")))
+    :components
+    ((:file "eval-syntax")
+     (:file "unify")))
 
    (:module
     analysis
@@ -71,6 +73,7 @@
     :depends-on (foundation terms)
     :components
     ((:file "comptime")
+     (:file "values")
      (:file "syntax")))
 
    (:module
@@ -104,6 +107,7 @@
     :components
     ((:file "monad" :depends-on ("package"))
      (:file "agent" :depends-on ("package"))
+     (:file "lazy" :depends-on ("package"))
      (:file "function" :depends-on ("package"))
      (:file "sequence" :depends-on ("package"))
      (:file "package")))))
