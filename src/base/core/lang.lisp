@@ -23,8 +23,11 @@
     (setf (gethash :|macro| lang-entries) (mk-former :macro))
     (setf (gethash :|quote| lang-entries) (mk-former :quote))
 
-    (setf (gethash :|if| lang-entries) (mk-former :if))
     (setf (gethash :|def| lang-entries) (mk-former :define))
+    (setf (gethash :|if| lang-entries) (mk-former :if))
+
+    ;; implicits
+    (setf (gethash :|implicit| lang-entries) (mk-former :implicit))
 
     ;; functional
     (setf (gethash :|fn| lang-entries)(mk-former :function))

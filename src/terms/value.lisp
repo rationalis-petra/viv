@@ -1,7 +1,26 @@
 (in-package :viv)
 
-(defclass viv-value () ()
+(defclass viv-value ()
+  ((attached-type
+    :accessor attached-type
+    :initarg :attached-type
+    :documentation "The type of the value."))
   (:documentation ""))
+
+;; Implicits
+(defclass implicit-value (viv-value)
+  ((computation
+    :accessor computation
+    :initarg :computation)
+   (args
+    :accessor args
+    :initarg :args)
+   (impl-type
+    :accessor impl-type
+    :initarg :impl-type)
+   (func
+    :accessor func
+    :initarg :func)))
 
 ;; Metaprogramming 
 (defclass viv-former (viv-value)
@@ -52,6 +71,7 @@
     :accessor arity
     :initarg :arity
     :documentation "The number of arguments it consumes")
+   
    (fun
     :accessor fun
     :initarg :fun
